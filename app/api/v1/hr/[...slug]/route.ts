@@ -303,6 +303,7 @@ export async function POST(
           : fullName.slice(0, 2).toUpperCase();
       const empId = `EMP-${3650 + state.workforce.length + 1}`;
 
+      const role = (body.role as any) || 'employee';
       const newEmp: WorkforceEmployee = {
         id: `WF-${state.workforce.length + 1}`,
         employeeId: empId,
@@ -312,13 +313,14 @@ export async function POST(
             `${fullName.toLowerCase().replace(/\s+/g, '.')}@ofc360.com`
         ),
         phone: String(body.phone || '+91 98200 11223'),
+        role,
         designation: String(body.designation || 'Senior Specialist'),
         department: String(body.department || 'Engineering'),
         location: String(body.location || 'Bengaluru · Hybrid'),
         shift: String(body.shift || 'General Shift'),
         status: 'Present',
         attendanceRate: 100.0,
-        joiningDate: 'Nov 04, 2026',
+        joiningDate: 'Nov 05, 2026',
         initials,
       };
 

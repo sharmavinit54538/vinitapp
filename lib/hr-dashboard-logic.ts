@@ -949,6 +949,7 @@ export function createInitialHrDashboardState(): HrDashboardDataState {
       name: 'Elena Rostova',
       email: 'elena.rostova@ofc360.com',
       phone: '+41 44 580 1290',
+      role: 'manager',
       designation: 'Principal Systems Architect',
       department: 'Engineering',
       location: 'Zurich · Hybrid',
@@ -957,6 +958,7 @@ export function createInitialHrDashboardState(): HrDashboardDataState {
       attendanceRate: 99.4,
       joiningDate: 'Jan 15, 2023',
       initials: 'ER',
+      reportsTo: 'Aarav Sharma',
     },
     {
       id: 'WF-02',
@@ -964,6 +966,7 @@ export function createInitialHrDashboardState(): HrDashboardDataState {
       name: 'Marcus Vance',
       email: 'marcus.vance@ofc360.com',
       phone: '+44 20 7946 0821',
+      role: 'executive',
       designation: 'VP of Global People Operations',
       department: 'People Operations',
       location: 'London · Onsite',
@@ -972,6 +975,7 @@ export function createInitialHrDashboardState(): HrDashboardDataState {
       attendanceRate: 98.8,
       joiningDate: 'Mar 04, 2022',
       initials: 'MV',
+      reportsTo: 'Aarav Sharma',
     },
     {
       id: 'WF-03',
@@ -979,6 +983,7 @@ export function createInitialHrDashboardState(): HrDashboardDataState {
       name: 'Sora Takahashi',
       email: 'sora.takahashi@ofc360.com',
       phone: '+81 3 5550 1920',
+      role: 'manager',
       designation: 'Staff Product Designer',
       department: 'Product & Design',
       location: 'Tokyo · Remote',
@@ -987,6 +992,7 @@ export function createInitialHrDashboardState(): HrDashboardDataState {
       attendanceRate: 99.6,
       joiningDate: 'Jul 18, 2023',
       initials: 'ST',
+      reportsTo: 'Marcus Vance',
     },
     {
       id: 'WF-04',
@@ -994,6 +1000,7 @@ export function createInitialHrDashboardState(): HrDashboardDataState {
       name: 'David Chen',
       email: 'david.chen@ofc360.com',
       phone: '+65 6789 4321',
+      role: 'executive',
       designation: 'Director of FP&A',
       department: 'Finance & Legal',
       location: 'Singapore · Onsite',
@@ -1002,6 +1009,7 @@ export function createInitialHrDashboardState(): HrDashboardDataState {
       attendanceRate: 98.1,
       joiningDate: 'Sep 11, 2022',
       initials: 'DC',
+      reportsTo: 'Aarav Sharma',
     },
     {
       id: 'WF-05',
@@ -1009,6 +1017,7 @@ export function createInitialHrDashboardState(): HrDashboardDataState {
       name: 'Amara Okafor',
       email: 'amara.okafor@ofc360.com',
       phone: '+1 212 555 0194',
+      role: 'it_admin',
       designation: 'Lead Security Engineer',
       department: 'Engineering',
       location: 'New York · Hybrid',
@@ -1017,6 +1026,7 @@ export function createInitialHrDashboardState(): HrDashboardDataState {
       attendanceRate: 97.5,
       joiningDate: 'Feb 20, 2024',
       initials: 'AO',
+      reportsTo: 'Elena Rostova',
     },
     {
       id: 'WF-06',
@@ -1024,6 +1034,7 @@ export function createInitialHrDashboardState(): HrDashboardDataState {
       name: 'Rohan Deshmukh',
       email: 'rohan.deshmukh@ofc360.com',
       phone: '+91 98201 44510',
+      role: 'manager',
       designation: 'Senior SRE Lead',
       department: 'Engineering',
       location: 'Bengaluru · Hybrid',
@@ -1032,6 +1043,7 @@ export function createInitialHrDashboardState(): HrDashboardDataState {
       attendanceRate: 96.4,
       joiningDate: 'May 09, 2023',
       initials: 'RD',
+      reportsTo: 'Elena Rostova',
     },
     {
       id: 'WF-07',
@@ -1039,6 +1051,7 @@ export function createInitialHrDashboardState(): HrDashboardDataState {
       name: 'Ananya Krishnan',
       email: 'ananya.krishnan@ofc360.com',
       phone: '+91 98450 77812',
+      role: 'executive',
       designation: 'VP Enterprise Sales',
       department: 'Enterprise Sales',
       location: 'Mumbai · Hybrid',
@@ -1047,6 +1060,7 @@ export function createInitialHrDashboardState(): HrDashboardDataState {
       attendanceRate: 97.9,
       joiningDate: 'Nov 02, 2022',
       initials: 'AK',
+      reportsTo: 'Aarav Sharma',
     },
     {
       id: 'WF-08',
@@ -1054,6 +1068,7 @@ export function createInitialHrDashboardState(): HrDashboardDataState {
       name: 'Vikramaditya Nair',
       email: 'vikram.nair@ofc360.com',
       phone: '+91 98112 33901',
+      role: 'manager',
       designation: 'Global Support Lead',
       department: 'Customer Success',
       location: 'Bengaluru · Onsite',
@@ -1062,6 +1077,7 @@ export function createInitialHrDashboardState(): HrDashboardDataState {
       attendanceRate: 98.2,
       joiningDate: 'Aug 14, 2023',
       initials: 'VN',
+      reportsTo: 'Aarav Sharma',
     },
   ];
 
