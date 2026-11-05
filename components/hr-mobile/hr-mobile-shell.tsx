@@ -58,7 +58,6 @@ import {
   Sun,
   Moon,
   LogOut,
-  ChevronDown,
   ArrowLeft,
   LifeBuoy,
   BarChart3,
@@ -255,15 +254,9 @@ function HrMobileDashboardContent({
               aria-label="Open HR Admin Profile Menu"
               aria-expanded={isAvatarMenuOpen}
               data-testid="header-profile-avatar"
-              className="min-w-[40px] min-h-[40px] px-2 rounded-xl flex items-center gap-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              className="w-9 h-9 rounded-full bg-slate-900 dark:bg-indigo-600 text-white font-bold text-xs flex items-center justify-center hover:ring-2 hover:ring-slate-300 dark:hover:ring-slate-600 transition-all cursor-pointer shadow-xs"
             >
-              <div className="w-7 h-7 rounded-lg bg-slate-900 dark:bg-indigo-600 text-white font-bold text-xs flex items-center justify-center">
-                AS
-              </div>
-              <span className="hidden sm:inline text-xs font-semibold text-slate-800 dark:text-slate-200">
-                {dashboardData.adminProfile.name.split(' ')[0]}
-              </span>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              AS
             </button>
 
             {isAvatarMenuOpen && (
