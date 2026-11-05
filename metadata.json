@@ -1,0 +1,6 @@
+{
+  "name": "OFC360 Brand & App Icon Studio",
+  "description": "Precision vector mobile app icon studio and enterprise HRMS brand identity system for OFC360, featuring the circular 'O' with embedded '360' and aerodynamic 'F' wings in deep navy (#081B3A) and electric blue (#0052FF).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
