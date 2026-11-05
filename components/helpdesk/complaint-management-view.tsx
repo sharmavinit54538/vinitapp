@@ -241,7 +241,14 @@ export function ComplaintManagementView({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Complaints Case List (col-span-7) */}
         <div className="lg:col-span-7 space-y-3">
-          {complaints.map((c) => {
+          {complaints.length === 0 ? (
+            <div className="p-8 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs text-center space-y-2">
+              <ShieldAlert className="w-8 h-8 text-slate-400 mx-auto" />
+              <p className="text-sm font-bold text-slate-900 dark:text-white">No confidential complaints registered</p>
+              <p className="text-xs text-slate-500">The grievance queue is currently clear. Click &quot;Log New Case&quot; to initiate a confidential inquiry.</p>
+            </div>
+          ) : (
+            complaints.map((c) => {
             const isSelected = selectedComplaint?.id === c.id;
             return (
               <div
@@ -289,7 +296,7 @@ export function ComplaintManagementView({
                 </div>
               </div>
             );
-          })}
+          }))}
         </div>
 
         {/* Selected Complaint Investigation Workspace (col-span-5) */}

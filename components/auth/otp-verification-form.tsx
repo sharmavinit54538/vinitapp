@@ -50,7 +50,7 @@ export function OtpVerificationForm({
   };
 
   const combinedOtp = digits.join('');
-  const displayEmail = email.trim() || 'hradmin@ofc360.com';
+  const displayEmail = email.trim();
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();

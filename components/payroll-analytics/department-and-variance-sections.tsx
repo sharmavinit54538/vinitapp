@@ -260,7 +260,14 @@ export function DepartmentPayrollCostSection({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 text-xs font-mono tabular-nums">
-              {filteredDepts.map((dept) => {
+              {filteredDepts.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-slate-500 font-sans">
+                    No department payroll data matches &ldquo;{searchQuery}&rdquo;.
+                  </td>
+                </tr>
+              ) : (
+                filteredDepts.map((dept) => {
                 const colorMeta = DEPT_COLORS[dept.department] || { dot: 'bg-indigo-600' };
                 return (
                   <tr
@@ -302,7 +309,8 @@ export function DepartmentPayrollCostSection({
                     </td>
                   </tr>
                 );
-              })}
+              })
+              )}
             </tbody>
           </table>
         </div>

@@ -80,7 +80,14 @@ export function AgentManagementView({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {agents.map((agent) => (
+        {agents.length === 0 ? (
+          <div className="md:col-span-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 text-center space-y-2">
+            <Users className="w-8 h-8 text-slate-400 mx-auto" />
+            <p className="text-sm font-bold text-slate-900 dark:text-white">No support agents configured</p>
+            <p className="text-xs text-slate-500">Configure Tier-1 and Tier-2 help desk agents to start routing tickets.</p>
+          </div>
+        ) : (
+          agents.map((agent) => (
           <div
             key={agent.id}
             className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs space-y-4"
@@ -174,7 +181,7 @@ export function AgentManagementView({
               ))}
             </div>
           </div>
-        ))}
+        )))}
       </div>
     </div>
   );

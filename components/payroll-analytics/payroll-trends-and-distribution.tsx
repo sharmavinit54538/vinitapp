@@ -238,13 +238,19 @@ export function PayrollTrendsSection({ trends }: PayrollTrendsChartProps) {
       </div>
 
       {/* Responsive Interactive SVG Line Chart */}
-      <div className="relative w-full overflow-x-auto">
-        <svg
-          viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-          className="w-full h-[250px] min-w-[580px] select-none"
-          role="img"
-          aria-label="Interactive Payroll Financial Trend Line Chart"
-        >
+      {data.length === 0 ? (
+        <div className="py-16 text-center text-slate-500 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 space-y-2">
+          <p className="text-sm font-bold text-slate-700 dark:text-slate-300">No payroll trend data available</p>
+          <p className="text-xs text-slate-400">Select a different financial year or date range to visualize trends.</p>
+        </div>
+      ) : (
+        <div className="relative w-full overflow-x-auto">
+          <svg
+            viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+            className="w-full h-[250px] min-w-[580px] select-none"
+            role="img"
+            aria-label="Interactive Payroll Financial Trend Line Chart"
+          >
           <defs>
             <linearGradient id="grossAreaGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.16" />

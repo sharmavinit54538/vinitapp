@@ -44,8 +44,8 @@ export function LoginForm({
     mode: 'onChange',
     reValidateMode: 'onChange',
     defaultValues: {
-      email: initialEmail || 'hradmin@ofc360.com',
-      password: 'Admin@360',
+      email: initialEmail || '',
+      password: '',
       remember_me: false,
     },
   });
