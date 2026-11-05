@@ -515,13 +515,19 @@ export function OverviewTab({
               )}
             </div>
 
-            <div className="divide-y divide-slate-100 dark:divide-slate-800">
-              {data.announcements.map((ann) => (
-                <div
-                  key={ann.id}
-                  data-testid={`announcement-item-${ann.id}`}
-                  className="py-3.5 first:pt-1 last:pb-0 space-y-1"
-                >
+            {data.announcements.length === 0 ? (
+              <div className="py-8 px-4 text-center rounded-xl border border-dashed border-slate-200 dark:border-slate-800 space-y-1.5">
+                <p className="text-xs font-bold text-slate-700 dark:text-slate-300">No active announcements</p>
+                <p className="text-[11px] text-slate-400">All company broadcasts and notices will be displayed here.</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                {data.announcements.map((ann) => (
+                  <div
+                    key={ann.id}
+                    data-testid={`announcement-item-${ann.id}`}
+                    className="py-3.5 first:pt-1 last:pb-0 space-y-1"
+                  >
                   <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
                     <div className="flex items-center gap-1.5">
                       <span
@@ -553,6 +559,7 @@ export function OverviewTab({
                 </div>
               ))}
             </div>
+            )}
           </section>
 
           {/* G. UPCOMING JOINERS & EXITS */}
@@ -571,26 +578,30 @@ export function OverviewTab({
                 </span>
               </div>
 
-              <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                {data.joiners.map((joiner) => (
-                  <div key={joiner.id} className="py-2.5 first:pt-0 last:pb-0">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-slate-900 dark:text-white">
-                        {joiner.name}
-                      </span>
-                      <span className="font-mono text-indigo-600 dark:text-indigo-400 tabular-nums">
-                        {joiner.joiningDate}
-                      </span>
+              {data.joiners.length === 0 ? (
+                <p className="text-xs text-slate-500 py-3 text-center">No upcoming joiners scheduled.</p>
+              ) : (
+                <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {data.joiners.map((joiner) => (
+                    <div key={joiner.id} className="py-2.5 first:pt-0 last:pb-0">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-slate-900 dark:text-white">
+                          {joiner.name}
+                        </span>
+                        <span className="font-mono text-indigo-600 dark:text-indigo-400 tabular-nums">
+                          {joiner.joiningDate}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        {joiner.designation} · {joiner.department}
+                      </p>
+                      <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
+                        Status: {joiner.onboardingStatus}
+                      </p>
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      {joiner.designation} · {joiner.department}
-                    </p>
-                    <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
-                      Status: {joiner.onboardingStatus}
-                    </p>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Upcoming Exits */}
@@ -604,26 +615,30 @@ export function OverviewTab({
                 </span>
               </div>
 
-              <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                {data.exits.map((exit) => (
-                  <div key={exit.id} className="py-2.5 first:pt-0 last:pb-0">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-slate-900 dark:text-white">
-                        {exit.name}
-                      </span>
-                      <span className="font-mono text-rose-600 dark:text-rose-400 tabular-nums">
-                        LWD {exit.lastWorkingDay}
-                      </span>
+              {data.exits.length === 0 ? (
+                <p className="text-xs text-slate-500 py-3 text-center">No upcoming exits scheduled.</p>
+              ) : (
+                <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {data.exits.map((exit) => (
+                    <div key={exit.id} className="py-2.5 first:pt-0 last:pb-0">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-slate-900 dark:text-white">
+                          {exit.name}
+                        </span>
+                        <span className="font-mono text-rose-600 dark:text-rose-400 tabular-nums">
+                          LWD {exit.lastWorkingDay}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        {exit.designation} · {exit.department}
+                      </p>
+                      <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
+                        Exit Status: {exit.exitStatus}
+                      </p>
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      {exit.designation} · {exit.department}
-                    </p>
-                    <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
-                      Exit Status: {exit.exitStatus}
-                    </p>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </section>
         </div>

@@ -103,13 +103,36 @@ export function ShiftsModuleTab({
       </div>
 
       {/* Shift Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-        {shifts.map((shift) => (
-          <div
-            key={shift.id}
-            data-testid={`shift-card-${shift.code}`}
-            className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-3.5 shadow-2xs"
-          >
+      {shifts.length === 0 ? (
+        <div className="py-12 px-4 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 text-center space-y-3">
+          <div className="w-12 h-12 mx-auto rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
+            <Clock className="w-6 h-6" />
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-slate-900 dark:text-white">No shifts configured</h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto mt-1">
+              No enterprise shifts have been added yet. Create standard or flexible shift schedules.
+            </p>
+          </div>
+          {canEdit && (
+            <button
+              type="button"
+              onClick={handleOpenCreate}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Create Shift</span>
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+          {shifts.map((shift) => (
+            <div
+              key={shift.id}
+              data-testid={`shift-card-${shift.code}`}
+              className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-3.5 shadow-2xs"
+            >
             <div className="flex items-start justify-between gap-2">
               <div>
                 <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
@@ -173,9 +196,9 @@ export function ShiftsModuleTab({
                 </button>
               )}
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Create / Edit Shift Bottom Sheet */}
       {editingShift && (
@@ -553,9 +576,22 @@ export function RostersModuleTab({
 
       {/* Employee Roster Assignment Cards */}
       <div className="space-y-3">
-        {filteredRosters.map((entry) => (
-          <div
-            key={entry.id}
+        {filteredRosters.length === 0 ? (
+          <div className="py-12 px-4 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 text-center space-y-2">
+            <div className="w-10 h-10 mx-auto rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
+              <Calendar className="w-5 h-5" />
+            </div>
+            <p className="text-sm font-bold text-slate-900 dark:text-white">No roster assignments found</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {searchQuery || deptFilter !== 'All'
+                ? 'No employees match the selected department or search filter.'
+                : 'No shift roster assignments are available for this period.'}
+            </p>
+          </div>
+        ) : (
+          filteredRosters.map((entry) => (
+            <div
+              key={entry.id}
             data-testid={`roster-card-${entry.employeeId}`}
             className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-3 shadow-2xs"
           >
@@ -778,9 +814,20 @@ export function HolidaysModuleTab({
 
       {/* Holiday List Cards */}
       <div className="space-y-3">
-        {filteredHolidays.map((holiday) => (
-          <div
-            key={holiday.id}
+        {filteredHolidays.length === 0 ? (
+          <div className="py-12 px-4 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 text-center space-y-2">
+            <div className="w-10 h-10 mx-auto rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
+              <Calendar className="w-5 h-5" />
+            </div>
+            <p className="text-sm font-bold text-slate-900 dark:text-white">No holidays found</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              No corporate or statutory holidays match the selected category or month filter.
+            </p>
+          </div>
+        ) : (
+          filteredHolidays.map((holiday) => (
+            <div
+              key={holiday.id}
             data-testid={`holiday-card-${holiday.id}`}
             className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 shadow-2xs"
           >

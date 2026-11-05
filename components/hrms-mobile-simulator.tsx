@@ -196,7 +196,13 @@ export function HrmsMobileSimulator({ config }: HrmsMobileSimulatorProps) {
                   </span>
                 </div>
 
-                {leaveRequests.map((item) => (
+                {leaveRequests.length === 0 ? (
+                  <div className="p-6 rounded-lg bg-white border border-slate-200 text-center space-y-1">
+                    <p className="text-xs font-semibold text-[#081B3A]">No leave requests pending</p>
+                    <p className="text-[11px] text-slate-500">All employee leave applications have been reviewed.</p>
+                  </div>
+                ) : (
+                  leaveRequests.map((item) => (
                   <div
                     key={item.id}
                     className="p-3 rounded-lg bg-white border border-slate-200 flex items-center justify-between gap-2"
@@ -240,7 +246,7 @@ export function HrmsMobileSimulator({ config }: HrmsMobileSimulatorProps) {
                       </span>
                     )}
                   </div>
-                ))}
+                )))}
               </div>
             </div>
           )}

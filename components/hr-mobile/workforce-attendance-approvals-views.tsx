@@ -171,68 +171,94 @@ export function WorkforceScreen({
       </div>
 
       {/* Employee Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-        {filteredEmployees.map((emp) => (
-          <div
-            key={emp.id}
-            data-testid={`workforce-card-${emp.employeeId}`}
-            className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-3 shadow-2xs"
-          >
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-slate-900 dark:bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
-                  {emp.initials}
-                </div>
-                <div>
-                  <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                    <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                      {emp.employeeId}
-                    </span>
-                    <span>·</span>
-                    <span>{emp.department}</span>
-                  </div>
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                    {emp.name}
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {emp.designation}
-                  </p>
-                </div>
-              </div>
-
-              <span
-                className={`text-xs font-semibold font-mono ${
-                  emp.status === 'Present' || emp.status === 'Remote'
-                    ? 'text-emerald-600 dark:text-emerald-400'
-                    : emp.status === 'Late'
-                    ? 'text-amber-600 dark:text-amber-400'
-                    : 'text-indigo-600 dark:text-indigo-400'
-                }`}
-              >
-                {emp.status}
-              </span>
-            </div>
-
-            <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-2 text-xs text-slate-600 dark:text-slate-300">
-              <div className="flex items-center gap-1.5 truncate">
-                <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span className="truncate">{emp.location}</span>
-              </div>
-              <div className="flex items-center gap-1.5 justify-end font-mono tabular-nums">
-                <span>Att: {emp.attendanceRate}%</span>
-              </div>
-              <div className="flex items-center gap-1.5 truncate">
-                <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span className="truncate">{emp.email}</span>
-              </div>
-              <div className="flex items-center gap-1.5 justify-end font-mono truncate">
-                <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span className="truncate">{emp.phone}</span>
-              </div>
-            </div>
+      {filteredEmployees.length === 0 ? (
+        <div className="py-12 px-4 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 text-center space-y-3">
+          <div className="w-12 h-12 mx-auto rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
+            <UserPlus className="w-6 h-6" />
           </div>
-        ))}
-      </div>
+          <div>
+            <h4 className="text-sm font-bold text-slate-900 dark:text-white">No employees found</h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto mt-1">
+              {q || dept !== 'All'
+                ? 'No workforce records match your active search or department filter.'
+                : 'No employees have been enrolled in the workforce directory yet.'}
+            </p>
+          </div>
+          {canEdit && (
+            <button
+              type="button"
+              onClick={onOpenAddEmployee}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Employee</span>
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+          {filteredEmployees.map((emp) => (
+            <div
+              key={emp.id}
+              data-testid={`workforce-card-${emp.employeeId}`}
+              className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-3 shadow-2xs"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-2xl bg-slate-900 dark:bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
+                    {emp.initials}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                      <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                        {emp.employeeId}
+                      </span>
+                      <span>·</span>
+                      <span>{emp.department}</span>
+                    </div>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                      {emp.name}
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {emp.designation}
+                    </p>
+                  </div>
+                </div>
+
+                <span
+                  className={`text-xs font-semibold font-mono ${
+                    emp.status === 'Present' || emp.status === 'Remote'
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : emp.status === 'Late'
+                      ? 'text-amber-600 dark:text-amber-400'
+                      : 'text-indigo-600 dark:text-indigo-400'
+                  }`}
+                >
+                  {emp.status}
+                </span>
+              </div>
+
+              <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-2 text-xs text-slate-600 dark:text-slate-300">
+                <div className="flex items-center gap-1.5 truncate">
+                  <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <span className="truncate">{emp.location}</span>
+                </div>
+                <div className="flex items-center gap-1.5 justify-end font-mono tabular-nums">
+                  <span>Att: {emp.attendanceRate}%</span>
+                </div>
+                <div className="flex items-center gap-1.5 truncate">
+                  <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <span className="truncate">{emp.email}</span>
+                </div>
+                <div className="flex items-center gap-1.5 justify-end font-mono truncate">
+                  <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <span className="truncate">{emp.phone}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -343,7 +369,12 @@ export function AttendanceScreen({
           Department Attendance Breakdown
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {data.departments.map((d) => (
+          {data.departments.length === 0 ? (
+            <div className="md:col-span-2 p-6 rounded-xl border border-slate-100 dark:border-slate-800 text-center text-xs text-slate-500">
+              No department attendance records available today.
+            </div>
+          ) : (
+            data.departments.map((d) => (
             <div
               key={d.id}
               className="p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/50 space-y-2"
@@ -366,7 +397,7 @@ export function AttendanceScreen({
                 <span>Absent: {d.absentCount}</span>
               </div>
             </div>
-          ))}
+          )))}
         </div>
       </div>
     </div>

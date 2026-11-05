@@ -149,7 +149,14 @@ export function KnowledgeBaseView({
 
       {/* Articles Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {filteredArticles.map((article) => (
+        {filteredArticles.length === 0 ? (
+          <div className="md:col-span-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 text-center space-y-2">
+            <BookOpen className="w-8 h-8 text-slate-400 mx-auto" />
+            <p className="text-sm font-bold text-slate-900 dark:text-white">No knowledge base articles found</p>
+            <p className="text-xs text-slate-500">No articles match your query or category filter. Click &quot;Create Article&quot; to publish new documentation.</p>
+          </div>
+        ) : (
+          filteredArticles.map((article) => (
           <div
             key={article.id}
             className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs space-y-3 flex flex-col justify-between"
@@ -208,7 +215,7 @@ export function KnowledgeBaseView({
               </div>
             </div>
           </div>
-        ))}
+        )))}
       </div>
 
       {/* Reader Modal */}

@@ -77,7 +77,14 @@ export function HelpDeskAnnouncementsView({
       </div>
 
       <div className="space-y-3">
-        {announcements.map((ann) => (
+        {announcements.length === 0 ? (
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 text-center space-y-2">
+            <Megaphone className="w-8 h-8 text-slate-400 mx-auto" />
+            <p className="text-sm font-bold text-slate-900 dark:text-white">No active announcements</p>
+            <p className="text-xs text-slate-500">There are no operational or system bulletins posted right now.</p>
+          </div>
+        ) : (
+          announcements.map((ann) => (
           <div
             key={ann.id}
             className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs space-y-3"
@@ -112,7 +119,7 @@ export function HelpDeskAnnouncementsView({
               <span>Published: {ann.postedDate}</span>
             </div>
           </div>
-        ))}
+        )))}
       </div>
 
       {newModal && (

@@ -101,7 +101,14 @@ export function FaqManagementView({
       </div>
 
       <div className="space-y-3">
-        {filteredFaqs.map((faq) => {
+        {filteredFaqs.length === 0 ? (
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 text-center space-y-2">
+            <HelpCircle className="w-8 h-8 text-slate-400 mx-auto" />
+            <p className="text-sm font-bold text-slate-900 dark:text-white">No FAQs found</p>
+            <p className="text-xs text-slate-500">No questions match your search query. Click &quot;Add FAQ&quot; to publish new questions.</p>
+          </div>
+        ) : (
+          filteredFaqs.map((faq) => {
           const isExpanded = expandedId === faq.id;
           return (
             <div
@@ -151,7 +158,7 @@ export function FaqManagementView({
               )}
             </div>
           );
-        })}
+        }))}
       </div>
 
       {newFaqModal && (
