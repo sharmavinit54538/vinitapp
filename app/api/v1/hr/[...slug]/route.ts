@@ -306,7 +306,6 @@ export async function POST(
       const empId = `EMP-${3650 + state.workforce.length + 1}`;
       const empRole = String(body.role || 'Employee').trim();
 
-      const role = (body.role as any) || 'employee';
       const newEmp: WorkforceEmployee = {
         id: `WF-${state.workforce.length + 1}`,
         employeeId: empId,
@@ -316,7 +315,6 @@ export async function POST(
             `${fullName.toLowerCase().replace(/\s+/g, '.')}@ofc360.com`
         ),
         phone: String(body.phone || '+91 98200 11223'),
-        role,
         designation: String(body.designation || 'Senior Specialist'),
         role: empRole,
         department: String(body.department || 'Engineering'),

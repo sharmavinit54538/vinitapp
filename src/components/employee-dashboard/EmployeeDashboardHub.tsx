@@ -120,10 +120,6 @@ export function EmployeeDashboardHub({
   const unreadNotificationsCount =
     unreadNotificationsCountOverride ?? profile?.unreadNotificationsCount ?? 0;
 
-  useEffect(() => {
-    router.prefetch('/login');
-  }, [router]);
-
   // Online/offline listener
   useEffect(() => {
     if (typeof window === 'undefined') return;

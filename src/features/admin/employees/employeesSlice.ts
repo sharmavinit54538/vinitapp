@@ -20,6 +20,7 @@ export const DEFAULT_ADMIN_EMPLOYEES: AdminEmployeeRecord[] = [
     lastName: 'Sharma',
     fullName: 'Aarav Sharma',
     officialEmail: 'aarav.sharma@ofc360.com',
+    personalEmail: 'aarav.personal@gmail.com',
     mobileNumber: '+91 98201 11223',
     gender: 'Male',
     dateOfBirth: '1990-04-12',
@@ -31,11 +32,11 @@ export const DEFAULT_ADMIN_EMPLOYEES: AdminEmployeeRecord[] = [
     employmentType: 'Full-time',
     workMode: 'Hybrid',
     probationPeriod: '3 months',
-    ctcStructure: 'Leadership Band C (₹30L+)',
+    ctcStructure: '₹32,00,000 / year',
     defaultShift: 'General Shift (09:30 - 18:30)',
     systemRole: 'Executive',
     sendOnboardingInvite: true,
-    status: 'Active',
+    status: 'ACTIVE',
     createdAt: '2024-01-10',
   },
   {
@@ -44,6 +45,7 @@ export const DEFAULT_ADMIN_EMPLOYEES: AdminEmployeeRecord[] = [
     lastName: 'Verma',
     fullName: 'Rohan Verma',
     officialEmail: 'rohan.verma@ofc360.com',
+    personalEmail: 'rohan.verma94@gmail.com',
     mobileNumber: '+91 98201 44556',
     gender: 'Male',
     dateOfBirth: '1994-08-22',
@@ -55,12 +57,87 @@ export const DEFAULT_ADMIN_EMPLOYEES: AdminEmployeeRecord[] = [
     employmentType: 'Full-time',
     workMode: 'Hybrid',
     probationPeriod: '6 months',
-    ctcStructure: 'Senior Band B (₹18L – ₹30L)',
+    ctcStructure: '₹24,00,000 / year',
     defaultShift: 'General Shift (09:30 - 18:30)',
     systemRole: 'Manager',
     sendOnboardingInvite: true,
-    status: 'Active',
+    status: 'PENDING',
     createdAt: '2025-03-01',
+  },
+  {
+    id: 'EMP-REC-3',
+    firstName: 'Ananya',
+    lastName: 'Iyer',
+    fullName: 'Ananya Iyer',
+    officialEmail: 'ananya.iyer@ofc360.com',
+    personalEmail: 'ananya.iyer@gmail.com',
+    mobileNumber: '+91 98201 77889',
+    gender: 'Female',
+    dateOfBirth: '1997-11-05',
+    employeeCode: 'EMP-103',
+    department: 'Engineering',
+    designation: 'Senior Frontend Engineer',
+    reportingManager: 'Rohan Verma',
+    dateOfJoining: '2026-10-15',
+    employmentType: 'Full-time',
+    workMode: 'Remote',
+    probationPeriod: '6 months',
+    ctcStructure: '₹16,50,000 / year',
+    defaultShift: 'Morning Shift (06:00 - 15:00)',
+    systemRole: 'Employee',
+    sendOnboardingInvite: true,
+    status: 'INVITED',
+    createdAt: '2026-10-15',
+  },
+  {
+    id: 'EMP-REC-4',
+    firstName: 'Kabir',
+    lastName: 'Mehta',
+    fullName: 'Kabir Mehta',
+    officialEmail: 'kabir.mehta@ofc360.com',
+    personalEmail: 'kabir.mehta@gmail.com',
+    mobileNumber: '+91 98201 99001',
+    gender: 'Male',
+    dateOfBirth: '1995-02-19',
+    employeeCode: 'EMP-104',
+    department: 'Finance & Legal',
+    designation: 'Financial Controller',
+    reportingManager: 'Aarav Sharma',
+    dateOfJoining: '2026-09-20',
+    employmentType: 'Full-time',
+    workMode: 'Office',
+    probationPeriod: '3 months',
+    ctcStructure: '₹18,00,000 / year',
+    defaultShift: 'General Shift (09:30 - 18:30)',
+    systemRole: 'Employee',
+    sendOnboardingInvite: true,
+    status: 'EXPIRED',
+    createdAt: '2026-09-20',
+  },
+  {
+    id: 'EMP-REC-5',
+    firstName: 'Vikram',
+    lastName: 'Nair',
+    fullName: 'Vikram Nair',
+    officialEmail: 'vikram.nair@ofc360.com',
+    personalEmail: 'vikram.nair@gmail.com',
+    mobileNumber: '+91 98201 33445',
+    gender: 'Male',
+    dateOfBirth: '1992-07-30',
+    employeeCode: 'EMP-105',
+    department: 'IT & Security',
+    designation: 'Cloud Security Architect',
+    reportingManager: 'Rohan Verma',
+    dateOfJoining: '2024-06-12',
+    employmentType: 'Full-time',
+    workMode: 'Hybrid',
+    probationPeriod: '6 months',
+    ctcStructure: '₹21,00,000 / year',
+    defaultShift: 'Night Shift (21:00 - 06:00)',
+    systemRole: 'IT-Admin',
+    sendOnboardingInvite: false,
+    status: 'DISABLED',
+    createdAt: '2024-06-12',
   },
 ];
 
@@ -77,6 +154,32 @@ export const employeesSlice = createSlice({
   reducers: {
     addEmployeeLocal(state, action: PayloadAction<AdminEmployeeRecord>) {
       state.items = [action.payload, ...state.items];
+    },
+    updateEmployeeLocal(
+      state,
+      action: PayloadAction<{
+        id: string;
+        changes: Partial<AdminEmployeeRecord>;
+      }>
+    ) {
+      const { id, changes } = action.payload;
+      state.items = state.items.map((emp) => {
+        if (emp.id !== id) return emp;
+        const firstName =
+          changes.firstName !== undefined ? changes.firstName : emp.firstName;
+        const lastName =
+          changes.lastName !== undefined ? changes.lastName : emp.lastName;
+        return {
+          ...emp,
+          ...changes,
+          firstName,
+          lastName,
+          fullName: `${firstName} ${lastName}`.trim() || emp.fullName,
+        };
+      });
+    },
+    deleteEmployeeLocal(state, action: PayloadAction<string>) {
+      state.items = state.items.filter((emp) => emp.id !== action.payload);
     },
     clearEmployeeError(state) {
       state.error = null;
@@ -125,5 +228,10 @@ export const employeesSlice = createSlice({
   },
 });
 
-export const { addEmployeeLocal, clearEmployeeError } = employeesSlice.actions;
+export const {
+  addEmployeeLocal,
+  updateEmployeeLocal,
+  deleteEmployeeLocal,
+  clearEmployeeError,
+} = employeesSlice.actions;
 export default employeesSlice.reducer;

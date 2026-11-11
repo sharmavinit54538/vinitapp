@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
       ...row,
       id: `EMP-BULK-${Date.now()}-${idx}`,
       fullName,
-      status: row.sendOnboardingInvite ? 'Onboarding Invite Sent' : 'Active',
+      status: row.sendOnboardingInvite ? 'INVITED' : 'ACTIVE',
       createdAt: new Date().toISOString().slice(0, 10),
     };
   });

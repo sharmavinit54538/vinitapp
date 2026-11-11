@@ -108,10 +108,6 @@ function HrMobileDashboardContent({
   const dashboardData = remoteData || fallbackState;
 
   useEffect(() => {
-    router.prefetch('/login');
-  }, [router]);
-
-  useEffect(() => {
     if (initialRole) {
       dispatch(setActiveRole(initialRole));
     }
@@ -428,16 +424,6 @@ function HrMobileDashboardContent({
               </div>
             )}
           </div>
-
-          <button
-            type="button"
-            onClick={handleLogout}
-            data-testid="mobile-header-logout-btn"
-            className="min-h-[36px] px-2.5 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 text-xs font-bold inline-flex items-center gap-1.5 hover:bg-rose-100 dark:hover:bg-rose-950/70 transition-colors cursor-pointer"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>Logout</span>
-          </button>
         </div>
       </header>
 

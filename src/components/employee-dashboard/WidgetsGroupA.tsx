@@ -258,16 +258,6 @@ export function EmployeeHeaderProfileWidget({
               </div>
             )}
           </div>
-
-          <button
-            type="button"
-            onClick={onLogout}
-            data-testid="header-direct-logout-btn"
-            className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 transition hover:bg-rose-100 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-950/70"
-          >
-            <LogOut className="h-3.5 w-3.5" />
-            <span>Logout</span>
-          </button>
         </div>
       </div>
 

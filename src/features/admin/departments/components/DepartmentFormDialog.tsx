@@ -154,7 +154,7 @@ export function DepartmentFormDialog({
       aria-labelledby="add-department-dialog-title"
       data-testid="department-form-dialog"
     >
-      <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+      <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
@@ -183,7 +183,7 @@ export function DepartmentFormDialog({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4" noValidate>
+        <form onSubmit={handleSubmit} className="mt-5 space-y-4" noValidate>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <Label htmlFor="dept-form-name" required>
@@ -214,13 +214,13 @@ export function DepartmentFormDialog({
 
             <div>
               <Label htmlFor="dept-form-parent">
-                Parent Department (Optional Hierarchy)
+                Parent Department
               </Label>
               <select
                 id="dept-form-parent"
                 value={parentDepartmentId}
                 onChange={(e) => setParentDepartmentId(e.target.value)}
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-900"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-900 focus:border-indigo-600 focus:outline-none"
               >
                 <option value="">None (Top-Level Department)</option>
                 {existingDepartments.map((d) => (
@@ -239,7 +239,7 @@ export function DepartmentFormDialog({
                 id="dept-form-manager"
                 value={managerName}
                 onChange={(e) => setManagerName(e.target.value)}
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-900"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-900 focus:border-indigo-600 focus:outline-none"
               >
                 {employeeOptions.map((emp) => (
                   <option key={emp.id} value={emp.fullName}>
@@ -251,7 +251,7 @@ export function DepartmentFormDialog({
 
             <div>
               <Label htmlFor="dept-form-budget">
-                Annual Budget Allocation (₹ / $)
+                Annual Budget Allocation (₹)
               </Label>
               <Input
                 id="dept-form-budget"
@@ -290,25 +290,26 @@ export function DepartmentFormDialog({
             />
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="space-y-4 border-t border-slate-100 pt-4">
             <div>
               <Label>Color Theme Tag</Label>
-              <div className="flex flex-wrap gap-2">
+              <div className="mt-1.5 flex items-center gap-3">
                 {COLOR_THEMES.map((theme) => (
                   <button
                     key={theme.id}
                     type="button"
                     onClick={() => setColorTheme(theme.id)}
-                    className={`inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-xs font-semibold ${
+                    aria-label={theme.label}
+                    title={theme.label}
+                    className={`flex h-9 w-9 items-center justify-center rounded-xl border transition-all cursor-pointer ${
                       colorTheme === theme.id
-                        ? 'border-slate-900 bg-slate-900 text-white'
-                        : 'border-slate-200 bg-white text-slate-700'
+                        ? 'border-slate-900 bg-slate-900 shadow-xs ring-2 ring-slate-900/15'
+                        : 'border-slate-200 bg-white hover:bg-slate-50'
                     }`}
                   >
                     <span
-                      className={`h-2.5 w-2.5 rounded-full ${theme.dotClass}`}
+                      className={`h-4 w-4 shrink-0 rounded-full ${theme.dotClass}`}
                     />
-                    {theme.label}
                   </button>
                 ))}
               </div>
@@ -316,7 +317,7 @@ export function DepartmentFormDialog({
 
             <div>
               <Label>Department Icon</Label>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="mt-1.5 grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {ICON_OPTIONS.map((item) => {
                   const IconComp = item.Icon;
                   return (
@@ -325,13 +326,13 @@ export function DepartmentFormDialog({
                       type="button"
                       onClick={() => setIconKey(item.id)}
                       title={item.label}
-                      className={`inline-flex items-center gap-1 rounded-xl border px-2.5 py-1.5 text-xs font-semibold ${
+                      className={`flex h-10 w-full items-center justify-center gap-2 rounded-xl border px-3 text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                         iconKey === item.id
-                          ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
-                          : 'border-slate-200 bg-white text-slate-600'
+                          ? 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-xs'
+                          : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                       }`}
                     >
-                      <IconComp className="h-3.5 w-3.5" />
+                      <IconComp className="h-3.5 w-3.5 shrink-0" />
                       {item.label}
                     </button>
                   );

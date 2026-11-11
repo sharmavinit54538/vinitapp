@@ -27,6 +27,12 @@ export const adminEmployeeFormSchema = z.object({
   firstName: z.string().trim().min(2, 'First Name is required'),
   lastName: z.string().trim().min(1, 'Last Name is required'),
   officialEmail: z.string().trim().email('Valid Official Email is required'),
+  personalEmail: z
+    .string()
+    .trim()
+    .email('Valid Personal Email is required')
+    .optional()
+    .or(z.literal('')),
   mobileNumber: z.string().trim().min(7, 'Valid Mobile Number is required'),
   gender: z.enum(['Male', 'Female', 'Non-Binary', 'Prefer not to say']),
   dateOfBirth: z.string().trim().min(4, 'Date of Birth is required'),
@@ -55,10 +61,37 @@ export const adminEmployeeFormSchema = z.object({
 
 export type AdminEmployeeFormValues = z.infer<typeof adminEmployeeFormSchema>;
 
+export type EmployeeOnboardingStatus =
+  | 'ACTIVE'
+  | 'PENDING'
+  | 'INVITED'
+  | 'EXPIRED'
+  | 'DISABLED';
+
+export function normalizeEmployeeStatus(
+  raw?: string
+): EmployeeOnboardingStatus {
+  const upper = String(raw || '')
+    .trim()
+    .toUpperCase();
+  if (upper === 'ACTIVE') return 'ACTIVE';
+  if (upper === 'PENDING' || upper === 'PROBATION') return 'PENDING';
+  if (
+    upper === 'INVITED' ||
+    upper === 'ONBOARDING INVITE SENT' ||
+    upper === 'INVITE SENT'
+  ) {
+    return 'INVITED';
+  }
+  if (upper === 'EXPIRED') return 'EXPIRED';
+  if (upper === 'DISABLED' || upper === 'INACTIVE') return 'DISABLED';
+  return 'ACTIVE';
+}
+
 export interface AdminEmployeeRecord extends AdminEmployeeFormValues {
   id: string;
   fullName: string;
-  status: 'Active' | 'Onboarding Invite Sent' | 'Probation';
+  status: EmployeeOnboardingStatus;
   createdAt: string;
 }
 

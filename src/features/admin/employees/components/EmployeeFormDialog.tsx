@@ -3,12 +3,9 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 import {
-  Briefcase,
   Loader2,
   MailCheck,
-  ShieldCheck,
   UserPlus,
-  Wallet,
   X,
 } from 'lucide-react';
 import { Button, Input, Label } from '@/src/components/ui';
@@ -30,20 +27,6 @@ export interface EmployeeFormDialogProps {
   isSubmitting: boolean;
   onSubmitEmployee: (payload: AdminEmployeeFormValues) => Promise<void>;
 }
-
-type EmployeeFormTab =
-  | 'personal'
-  | 'organization'
-  | 'classification'
-  | 'compensation';
-
-const SALARY_STRUCTURES = [
-  'Standard Tech Band A (₹12L – ₹18L)',
-  'Senior Band B (₹18L – ₹30L)',
-  'Leadership Band C (₹30L+)',
-  'Operations & G&A Band (₹8L – ₹14L)',
-  'Intern / Stipend Structure (₹4.8L)',
-];
 
 const SHIFT_OPTIONS = [
   'General Shift (09:30 - 18:30)',
@@ -68,11 +51,11 @@ export function EmployeeFormDialog({
   isSubmitting,
   onSubmitEmployee,
 }: EmployeeFormDialogProps) {
-  const [activeTab, setActiveTab] = useState<EmployeeFormTab>('personal');
   const [formValues, setFormValues] = useState<AdminEmployeeFormValues>({
     firstName: '',
     lastName: '',
     officialEmail: '',
+    personalEmail: '',
     mobileNumber: '+91 98201 11223',
     gender: 'Prefer not to say',
     dateOfBirth: '1996-05-15',
@@ -84,7 +67,7 @@ export function EmployeeFormDialog({
     employmentType: 'Full-time',
     workMode: 'Hybrid',
     probationPeriod: '6 months',
-    ctcStructure: SALARY_STRUCTURES[0],
+    ctcStructure: '',
     defaultShift: SHIFT_OPTIONS[0],
     systemRole: 'Employee',
     sendOnboardingInvite: true,
@@ -113,7 +96,10 @@ export function EmployeeFormDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const parsed = adminEmployeeFormSchema.safeParse(formValues);
+    const parsed = adminEmployeeFormSchema.safeParse({
+      ...formValues,
+      employeeCode: formValues.employeeCode || nextEmployeeCode || 'EMP-3655',
+    });
     if (!parsed.success) {
       const fieldErrors: Record<string, string> = {};
       for (const issue of parsed.error.issues) {
@@ -184,32 +170,9 @@ export function EmployeeFormDialog({
           </button>
         </div>
 
-        {/* Section Tabs */}
-        <div className="mt-4 grid grid-cols-2 gap-1.5 rounded-xl bg-slate-100 p-1 sm:grid-cols-4">
-          {[
-            { id: 'personal', label: '1. Personal Details' },
-            { id: 'organization', label: '2. Job & Org' },
-            { id: 'classification', label: '3. Classification' },
-            { id: 'compensation', label: '4. CTC & Role' },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id as EmployeeFormTab)}
-              className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
-                activeTab === tab.id
-                  ? 'bg-white text-indigo-700 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4" noValidate>
+        <form onSubmit={handleSubmit} className="mt-4 space-y-5" noValidate>
           {/* 1. Personal Details */}
-          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <Label htmlFor="emp-first-name" required>
                 First Name
@@ -272,7 +235,7 @@ export function EmployeeFormDialog({
                 onChange={(e) =>
                   updateField('gender', e.target.value as GenderOption)
                 }
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-900"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-900 focus:border-indigo-600 focus:outline-none"
               >
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
@@ -292,20 +255,19 @@ export function EmployeeFormDialog({
             </div>
           </div>
 
-          {/* 2. Job & Organization + 3. Classification */}
-          <div className="grid grid-cols-1 gap-3.5 border-t border-slate-100 pt-4 sm:grid-cols-3">
+          {/* 2. Job, Organization & Classification */}
+          <div className="grid grid-cols-1 gap-4 border-t border-slate-100 pt-4 sm:grid-cols-2">
             <div>
-              <Label htmlFor="emp-code-input" required>
-                Employee ID / Code
+              <Label htmlFor="emp-personal-email" required>
+                Personal Email
               </Label>
               <Input
-                id="emp-code-input"
-                value={formValues.employeeCode}
-                onChange={(e) =>
-                  updateField('employeeCode', e.target.value.toUpperCase())
-                }
-                error={errors.employeeCode}
-                className="font-mono"
+                id="emp-personal-email"
+                type="email"
+                placeholder="kabir.personal@gmail.com"
+                value={formValues.personalEmail || ''}
+                onChange={(e) => updateField('personalEmail', e.target.value)}
+                error={errors.personalEmail}
               />
             </div>
 
@@ -317,7 +279,7 @@ export function EmployeeFormDialog({
                 id="emp-dept-select"
                 value={formValues.department}
                 onChange={(e) => updateField('department', e.target.value)}
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-900"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-900 focus:border-indigo-600 focus:outline-none"
               >
                 {departmentOptions.map((dept) => (
                   <option key={dept} value={dept}>
@@ -348,7 +310,7 @@ export function EmployeeFormDialog({
                 onChange={(e) =>
                   updateField('reportingManager', e.target.value)
                 }
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-900"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-900 focus:border-indigo-600 focus:outline-none"
               >
                 {managerOptions.map((mgr) => (
                   <option key={mgr} value={mgr}>
@@ -379,7 +341,7 @@ export function EmployeeFormDialog({
                     e.target.value as EmploymentTypeOption
                   )
                 }
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-900"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-900 focus:border-indigo-600 focus:outline-none"
               >
                 <option value="Full-time">Full-time</option>
                 <option value="Part-time">Part-time</option>
@@ -396,7 +358,7 @@ export function EmployeeFormDialog({
                 onChange={(e) =>
                   updateField('workMode', e.target.value as WorkModeOption)
                 }
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-900"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-900 focus:border-indigo-600 focus:outline-none"
               >
                 <option value="Office">Office (On-Site)</option>
                 <option value="Remote">Remote (WFH)</option>
@@ -415,20 +377,20 @@ export function EmployeeFormDialog({
                     e.target.value as '3 months' | '6 months'
                   )
                 }
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-900"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-900 focus:border-indigo-600 focus:outline-none"
               >
                 <option value="3 months">3 months</option>
                 <option value="6 months">6 months</option>
               </select>
             </div>
 
-            <div>
+            <div className="sm:col-span-2">
               <Label htmlFor="emp-shift-select">Default Shift Assignment</Label>
               <select
                 id="emp-shift-select"
                 value={formValues.defaultShift}
                 onChange={(e) => updateField('defaultShift', e.target.value)}
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-900"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-900 focus:border-indigo-600 focus:outline-none"
               >
                 {SHIFT_OPTIONS.map((sh) => (
                   <option key={sh} value={sh}>
@@ -439,43 +401,42 @@ export function EmployeeFormDialog({
             </div>
           </div>
 
-          {/* 4. Compensation & System Access Role */}
-          <div className="grid grid-cols-1 gap-4 border-t border-slate-100 pt-4 sm:grid-cols-2">
+          {/* 3. Compensation & System Access Role (Full-Width Clean Rows) */}
+          <div className="space-y-4 border-t border-slate-100 pt-4">
             <div>
-              <Label htmlFor="emp-ctc-select">
+              <Label htmlFor="emp-ctc-input" required>
                 Initial CTC / Salary Structure
               </Label>
-              <select
-                id="emp-ctc-select"
+              <Input
+                id="emp-ctc-input"
+                type="text"
+                placeholder="e.g., ₹12,00,000 / year or ₹50,000 / month"
                 value={formValues.ctcStructure}
                 onChange={(e) => updateField('ctcStructure', e.target.value)}
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-900"
-              >
-                {SALARY_STRUCTURES.map((band) => (
-                  <option key={band} value={band}>
-                    {band}
-                  </option>
-                ))}
-              </select>
+                error={errors.ctcStructure}
+              />
             </div>
 
             <div>
               <Label required>System Access Role</Label>
-              <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
-                {SYSTEM_ROLES.map((roleOpt) => (
-                  <button
-                    key={roleOpt}
-                    type="button"
-                    onClick={() => updateField('systemRole', roleOpt)}
-                    className={`rounded-xl border px-2.5 py-2 text-xs font-bold transition-all ${
-                      formValues.systemRole === roleOpt
-                        ? 'border-indigo-600 bg-indigo-600 text-white'
-                        : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
-                    }`}
-                  >
-                    {roleOpt}
-                  </button>
-                ))}
+              <div className="mt-1.5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+                {SYSTEM_ROLES.map((roleOpt) => {
+                  const isSelected = formValues.systemRole === roleOpt;
+                  return (
+                    <button
+                      key={roleOpt}
+                      type="button"
+                      onClick={() => updateField('systemRole', roleOpt)}
+                      className={`flex h-10 w-full items-center justify-center rounded-xl border px-3 text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                        isSelected
+                          ? 'border-indigo-600 bg-indigo-600 text-white shadow-xs'
+                          : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-slate-100'
+                      }`}
+                    >
+                      {roleOpt}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>

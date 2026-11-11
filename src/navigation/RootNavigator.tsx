@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   SafeAreaView,
   StatusBar,
@@ -22,7 +22,6 @@ import {
   CalendarDays,
   UserPlus,
   Megaphone,
-  LogOut,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useSelector, useDispatch } from 'react-redux';
@@ -97,10 +96,6 @@ export function RootNavigator() {
     }, 3200);
   };
 
-  useEffect(() => {
-    router.prefetch('/login');
-  }, [router]);
-
   const handleLogout = () => {
     authClient.clearSession();
     void authClient.logout();
@@ -158,23 +153,6 @@ export function RootNavigator() {
               {unreadNotifCount > 0 ? (
                 <View style={[styles.notifDot, { backgroundColor: palette.rose }]} />
               ) : null}
-            </Pressable>
-
-            <Pressable
-              accessibilityLabel="Logout"
-              onPress={handleLogout}
-              style={[
-                styles.logoutHeaderBtn,
-                {
-                  borderColor: palette.rose,
-                  backgroundColor: ui.isDarkMode ? 'rgba(244,63,94,0.14)' : '#FFF1F2',
-                },
-              ]}
-            >
-              <LogOut size={15} color={palette.rose} strokeWidth={2.2} />
-              <Text style={[styles.logoutHeaderText, { color: palette.rose }]}>
-                Logout
-              </Text>
             </Pressable>
           </View>
         </View>
@@ -506,21 +484,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 14,
-  },
-  logoutHeaderBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginLeft: 4,
-  },
-  logoutHeaderText: {
-    fontFamily: FONT_SANS,
-    fontSize: 12,
-    fontWeight: '700',
   },
   notifDot: {
     position: 'absolute',

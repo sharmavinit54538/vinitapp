@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -10,14 +10,15 @@ import {
 } from 'react-native';
 import {
   Plus,
-  ChevronDown,
   MoreVertical,
   Users,
   Building2,
   Network,
   UserPlus,
 } from 'lucide-react';
+import { useDispatch, useSelector } from 'react-redux';
 import { Toaster } from 'sonner';
+import { AppDispatch, RootState } from '@/lib/store';
 import { getPalette, FONT_SANS, FONT_MONO } from '../theme/colors';
 import {
   WorkforceEmployee,
@@ -25,6 +26,16 @@ import {
 } from '@/lib/hr-dashboard-logic';
 import { EmployeesTable } from '@/src/features/admin/employees/components/EmployeesTable';
 import { DepartmentsDirectoryTab } from '@/src/features/admin/departments/components/DepartmentsDirectoryTab';
+import { EmployeeFormDialog } from '@/src/features/admin/employees/components/EmployeeFormDialog';
+import {
+  AdminEmployeeFormValues,
+  createAdminEmployeeThunk,
+} from '@/src/features/admin/employees/employeesThunk';
+import { DepartmentFormDialog } from '@/src/features/admin/departments/components/DepartmentFormDialog';
+import {
+  CreateDepartmentPayload,
+  createDepartmentThunk,
+} from '@/src/features/admin/departments/departmentsThunk';
 
 interface WorkforceScreenProps {
   workforce: WorkforceEmployee[];
@@ -39,18 +50,56 @@ type WorkforceSubView = 'Employee' | 'Department' | 'Org Chart';
 
 export function WorkforceScreen({
   workforce,
-  departments,
   isDark,
   canManage,
-  onOpenAddEmployee,
 }: WorkforceScreenProps) {
+  const dispatch = useDispatch<AppDispatch>();
   const palette = getPalette(isDark);
+
+  const { items: adminEmployees, submitting: empSubmitting } = useSelector(
+    (state: RootState) => state.adminEmployees
+  );
+  const { items: adminDepartments, submitting: deptSubmitting } = useSelector(
+    (state: RootState) => state.adminDepartments
+  );
 
   const [subView, setSubView] = useState<WorkforceSubView>('Employee');
   const [isAddDropdownOpen, setIsAddDropdownOpen] = useState(false);
   const [isViewMenuOpen, setIsViewMenuOpen] = useState(false);
+  const [isAddEmployeeDialogOpen, setIsAddEmployeeDialogOpen] = useState(false);
+  const [isAddDepartmentDialogOpen, setIsAddDepartmentDialogOpen] = useState(false);
 
-  const totalDepts = useMemo(() => departments.length, [departments]);
+  const departmentOptions = useMemo(() => {
+    const names = adminDepartments.map((d) => d.name);
+    return names.length > 0
+      ? names
+      : ['Engineering', 'People Operations', 'Finance & Legal', 'Sales'];
+  }, [adminDepartments]);
+
+  const managerOptions = useMemo(() => {
+    const mgrs = adminEmployees.map((e) => e.fullName);
+    return mgrs.length > 0 ? mgrs : ['Aarav Sharma', 'Rohan Verma'];
+  }, [adminEmployees]);
+
+  const employeeOptions = useMemo(
+    () =>
+      adminEmployees.map((e) => ({
+        id: e.id,
+        fullName: e.fullName,
+        designation: e.designation,
+      })),
+    [adminEmployees]
+  );
+
+  const handleCreateEmployee = async (payload: AdminEmployeeFormValues) => {
+    await dispatch(createAdminEmployeeThunk(payload)).unwrap();
+    setSubView('Employee');
+  };
+
+  const handleCreateDepartment = async (payload: CreateDepartmentPayload) => {
+    await dispatch(createDepartmentThunk(payload)).unwrap();
+    setSubView('Department');
+  };
 
   return (
     <View style={styles.stack}>
@@ -63,20 +112,7 @@ export function WorkforceScreen({
           { backgroundColor: palette.surface, borderColor: palette.border },
         ]}
       >
-        <View style={styles.headerRow}>
-          <View style={styles.titleCol}>
-            <Text style={[styles.eyebrow, { color: palette.textMuted }]}>
-              Workforce Directory · {subView}
-            </Text>
-            <Text style={[styles.title, { color: palette.textPrimary }]}>
-              {subView === 'Employee'
-                ? `Employees (${workforce.length})`
-                : subView === 'Department'
-                ? `Departments (${totalDepts})`
-                : 'Enterprise Org Chart'}
-            </Text>
-          </View>
-
+        <View style={[styles.headerRow, { justifyContent: 'flex-end' }]}>
           <View style={styles.actionsRow}>
             {canManage ? (
               <Pressable
@@ -85,7 +121,6 @@ export function WorkforceScreen({
               >
                 <Plus size={16} color="#FFFFFF" strokeWidth={2.4} />
                 <Text style={styles.addBtnText}>Add</Text>
-                <ChevronDown size={14} color="#FFFFFF" strokeWidth={2.3} />
               </Pressable>
             ) : null}
 
@@ -100,47 +135,6 @@ export function WorkforceScreen({
               <MoreVertical size={18} color={palette.textPrimary} strokeWidth={2.2} />
             </Pressable>
           </View>
-        </View>
-
-        {/* Sub-view switcher pills for quick navigation */}
-        <View
-          style={[
-            styles.segmentedBar,
-            { backgroundColor: palette.surfaceMuted, borderColor: palette.border, marginBottom: 16 },
-          ]}
-        >
-          {(['Employee', 'Department', 'Org Chart'] as const).map((tab) => {
-            const active = subView === tab;
-            return (
-              <Pressable
-                key={tab}
-                onPress={() => setSubView(tab)}
-                style={[
-                  styles.segmentItem,
-                  active
-                    ? {
-                        backgroundColor: palette.surface,
-                        borderColor: palette.border,
-                        borderWidth: 1,
-                      }
-                    : null,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.segmentText,
-                    { color: active ? palette.primary : palette.textMuted },
-                  ]}
-                >
-                  {tab === 'Employee'
-                    ? 'Employees Directory'
-                    : tab === 'Department'
-                    ? 'Departments & Hierarchy'
-                    : 'Org Chart'}
-                </Text>
-              </Pressable>
-            );
-          })}
         </View>
 
         {subView === 'Employee' ? (
@@ -201,13 +195,10 @@ export function WorkforceScreen({
             <View style={styles.handleWrap}>
               <View style={[styles.handleBar, { backgroundColor: palette.handleBar }]} />
             </View>
-            <Text style={[styles.sheetHeader, { color: palette.textPrimary }]}>
-              Create Workforce Record
-            </Text>
             <Pressable
               onPress={() => {
                 setIsAddDropdownOpen(false);
-                onOpenAddEmployee();
+                setIsAddEmployeeDialogOpen(true);
               }}
               style={[styles.sheetItem, { backgroundColor: palette.inputBg, borderColor: palette.border }]}
             >
@@ -216,31 +207,44 @@ export function WorkforceScreen({
                 <Text style={[styles.menuItemTitle, { color: palette.textPrimary }]}>
                   Add Employee
                 </Text>
-                <Text style={[styles.menuItemSub, { color: palette.textMuted }]}>
-                  Onboard a new full-time or contract employee
-                </Text>
               </View>
             </Pressable>
             <Pressable
               onPress={() => {
                 setIsAddDropdownOpen(false);
-                setSubView('Department');
+                setIsAddDepartmentDialogOpen(true);
               }}
               style={[styles.sheetItem, { backgroundColor: palette.inputBg, borderColor: palette.border }]}
             >
               <Building2 size={18} color={palette.emerald} strokeWidth={2.2} />
               <View style={styles.menuItemCol}>
                 <Text style={[styles.menuItemTitle, { color: palette.textPrimary }]}>
-                  Manage Departments &amp; Bulk Import
-                </Text>
-                <Text style={[styles.menuItemSub, { color: palette.textMuted }]}>
-                  Switch to Department Directory to add units or bulk import CSV
+                  Add Department
                 </Text>
               </View>
             </Pressable>
           </View>
         </Pressable>
       </Modal>
+
+      <EmployeeFormDialog
+        open={isAddEmployeeDialogOpen}
+        onClose={() => setIsAddEmployeeDialogOpen(false)}
+        departmentOptions={departmentOptions}
+        managerOptions={managerOptions}
+        nextEmployeeCode={`EMP-${100 + adminEmployees.length + 1}`}
+        isSubmitting={empSubmitting}
+        onSubmitEmployee={handleCreateEmployee}
+      />
+
+      <DepartmentFormDialog
+        open={isAddDepartmentDialogOpen}
+        onClose={() => setIsAddDepartmentDialogOpen(false)}
+        existingDepartments={adminDepartments}
+        employeeOptions={employeeOptions}
+        isSubmitting={deptSubmitting}
+        onSubmitDepartment={handleCreateDepartment}
+      />
 
       {/* 3-DOT VIEW SWITCHER BOTTOM SHEET */}
       <Modal
