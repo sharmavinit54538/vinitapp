@@ -1,6 +1,7 @@
 import React from 'react';
-import { HrMobileAppShell } from '@/components/hr-mobile/hr-mobile-shell';
+import App from '@/App';
 import { Ofc360Role, OFC360_ROLES } from '@/lib/auth-schemas';
+import { EmployeeDashboardHub } from '@/src/components/employee-dashboard/EmployeeDashboardHub';
 
 export default async function RoleDashboardPage({
   params,
@@ -15,5 +16,14 @@ export default async function RoleDashboardPage({
     ? normalizedRole
     : 'hr_admin';
 
-  return <HrMobileAppShell initialRole={validRole} />;
+  if (validRole === 'employee') {
+    return <EmployeeDashboardHub initialRole="employee" />;
+  }
+
+  if (validRole === 'manager') {
+    return <EmployeeDashboardHub initialRole="reporting_manager" />;
+  }
+
+  return <App initialRole={validRole} />;
 }
+

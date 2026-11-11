@@ -1,6 +1,7 @@
 import React from 'react';
-import { HrMobileAppShell } from '@/components/hr-mobile/hr-mobile-shell';
+import App from '@/App';
 
 export default function HomePage() {
-  return <HrMobileAppShell initialRole="hr_admin" />;
+  return <App initialRole="hr_admin" />;
 }
+

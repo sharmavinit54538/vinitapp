@@ -14,6 +14,7 @@
     "@hookform/resolvers": "^5.2.1",
     "@reduxjs/toolkit": "^2.14.0",
     "@tanstack/react-query": "^5.105.3",
+    "@types/react-native": "^0.72.8",
     "autoprefixer": "^10.4.21",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -24,7 +25,9 @@
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "react-hook-form": "^7.91.0",
+    "react-native-web": "^0.21.4",
     "react-redux": "^9.3.1",
+    "sonner": "^2.0.8",
     "tailwind-merge": "^3.3.1",
     "zod": "^4.6.7"
   },

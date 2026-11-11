@@ -391,6 +391,7 @@ export function AddEmployeeBottomSheet({
       email: '',
       phone: '+91 98200 11223',
       designation: '',
+      role: 'Employee',
       department: 'Engineering',
       location: 'Bengaluru · Hybrid',
       shift: 'General Shift',
@@ -513,13 +514,13 @@ export function AddEmployeeBottomSheet({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
             <div>
               <label
                 htmlFor="emp-sheet-designation"
                 className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1"
               >
-                Designation / Role
+                Designation
               </label>
               <input
                 id="emp-sheet-designation"
@@ -533,6 +534,25 @@ export function AddEmployeeBottomSheet({
                   {errors.designation.message}
                 </p>
               )}
+            </div>
+
+            <div>
+              <label
+                htmlFor="emp-sheet-role"
+                className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1"
+              >
+                Role
+              </label>
+              <select
+                id="emp-sheet-role"
+                className="w-full h-11 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 text-sm text-slate-900 dark:text-slate-100"
+                {...register('role')}
+              >
+                <option value="Employee">Employee</option>
+                <option value="Manager">Manager</option>
+                <option value="Executive">Executive</option>
+                <option value="IT-Admin">IT-Admin</option>
+              </select>
             </div>
 
             <div>

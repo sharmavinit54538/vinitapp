@@ -21,7 +21,7 @@ const nextConfig: NextConfig = {
     ],
   },
   output: 'standalone',
-  transpilePackages: ['motion'],
+  transpilePackages: ['motion', 'react-native-web'],
   webpack: (config, {dev}) => {
     // HMR is disabled in AI Studio via DISABLE_HMR env var.
     // Do not modify—file watching is disabled to prevent flickering during agent edits.
@@ -30,6 +30,16 @@ const nextConfig: NextConfig = {
         ignored: /.*/,
       };
     }
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      'react-native$': 'react-native-web',
+    };
+    config.resolve.extensions = [
+      '.web.tsx',
+      '.web.ts',
+      '.web.js',
+      ...(config.resolve.extensions || []),
+    ];
     return config;
   },
 };

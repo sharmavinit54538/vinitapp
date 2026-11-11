@@ -159,6 +159,7 @@ export type FetchLike = (
 
 export class Ofc360AuthClient {
   private accessToken: string | null = null;
+  private cachedUser: Ofc360User | null = null;
   private refreshPromise: Promise<string | null> | null = null;
   private fetchImpl: FetchLike;
   private onSessionExpired?: () => void;
@@ -177,8 +178,17 @@ export class Ofc360AuthClient {
     this.accessToken = token;
   }
 
+  public getCachedUser(): Ofc360User | null {
+    return this.cachedUser;
+  }
+
+  public setCachedUser(user: Ofc360User | null): void {
+    this.cachedUser = user;
+  }
+
   public clearSession(): void {
     this.accessToken = null;
+    this.cachedUser = null;
   }
 
   private async parseResponseBody(res: Response): Promise<unknown> {
@@ -445,13 +455,21 @@ export class Ofc360AuthClient {
 
   // 5. POST /api/v1/auth/logout
   public async logout(): Promise<void> {
+    this.clearSession();
     try {
-      await this.request('/logout', {
-        method: 'POST',
-        skipAuthRefresh: true,
-      });
-    } finally {
-      this.clearSession();
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 1500);
+      try {
+        await this.request('/logout', {
+          method: 'POST',
+          skipAuthRefresh: true,
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    } catch {
+      // Session is already cleared locally; ignore remote network/HTTP errors on logout
     }
   }
 

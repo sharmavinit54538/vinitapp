@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   ShiftItem,
   RosterEntry,
@@ -28,6 +28,7 @@ import {
   Check,
   Search,
   MapPin,
+  MoreVertical,
 } from 'lucide-react';
 
 interface ShiftsModuleTabProps {
@@ -196,9 +197,10 @@ export function ShiftsModuleTab({
                 </button>
               )}
             </div>
-          ))}
-        </div>
-      )}
+          </div>
+        ))}
+      </div>
+    )}
 
       {/* Create / Edit Shift Bottom Sheet */}
       {editingShift && (
@@ -685,11 +687,14 @@ export function RostersModuleTab({
               </div>
             )}
           </div>
-        ))}
+        ))
+        )}
       </div>
     </div>
   );
 }
+
+import { HolidayCalendarModule } from './holiday-calendar-module';
 
 interface HolidaysModuleTabProps {
   holidays: HolidayItem[];
@@ -702,367 +707,11 @@ export function HolidaysModuleTab({
   canEdit,
   onSuccessToast,
 }: HolidaysModuleTabProps) {
-  const [selectedCategory, setSelectedCategory] = useState<
-    HolidayCategory | 'All'
-  >('All');
-  const [selectedMonth, setSelectedMonth] = useState<string>('All');
-  const [editingHoliday, setEditingHoliday] =
-    useState<Partial<HolidayItem> | null>(null);
-  const [viewingHoliday, setViewingHoliday] = useState<HolidayItem | null>(
-    null
-  );
-
-  const [saveHoliday, { isLoading: isSaving }] = useSaveHolidayMutation();
-  const [deleteHoliday] = useDeleteHolidayMutation();
-
-  const filteredHolidays = filterHolidays(
-    holidays,
-    selectedCategory,
-    selectedMonth
-  );
-
-  const handleSaveHoliday = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingHoliday?.name || !editingHoliday?.date) return;
-    try {
-      const res = await saveHoliday({
-        ...editingHoliday,
-        name: editingHoliday.name,
-        date: editingHoliday.date,
-      }).unwrap();
-      onSuccessToast(res.message);
-      setEditingHoliday(null);
-    } catch {
-      onSuccessToast('Unable to save holiday.');
-    }
-  };
-
-  const handleDelete = async (id: string, name: string) => {
-    if (!canEdit) return;
-    try {
-      await deleteHoliday({ id }).unwrap();
-      onSuccessToast(`Removed "${name}" from company holiday calendar.`);
-    } catch {
-      onSuccessToast('Could not remove holiday.');
-    }
-  };
-
   return (
-    <div className="space-y-4" data-testid="holidays-module-tab">
-      {/* Header & Add Holiday Action */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-base font-bold text-slate-900 dark:text-white">
-            2026 Enterprise Holiday Calendar
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Statutory national, regional, and restricted / optional holidays
-          </p>
-        </div>
-
-        {canEdit && (
-          <button
-            type="button"
-            onClick={() =>
-              setEditingHoliday({
-                name: '',
-                date: '2026-12-24',
-                category: 'Optional',
-                location: 'Global · All Hubs',
-                description: 'Year-end restricted holiday.',
-              })
-            }
-            data-testid="add-holiday-btn"
-            className="min-h-[44px] px-4 rounded-xl bg-slate-900 dark:bg-indigo-600 text-white text-xs font-semibold inline-flex items-center gap-1.5 hover:bg-slate-800 dark:hover:bg-indigo-500 transition-colors cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            Add Holiday
-          </button>
-        )}
-      </div>
-
-      {/* Category & Month Filters */}
-      <div className="flex flex-wrap items-center justify-between gap-2.5">
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-          {(['All', 'National', 'Regional', 'Optional'] as const).map((cat) => (
-            <button
-              key={cat}
-              type="button"
-              onClick={() => setSelectedCategory(cat)}
-              className={`min-h-[38px] px-3.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                selectedCategory === cat
-                  ? 'bg-slate-900 dark:bg-indigo-600 text-white'
-                  : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300'
-              }`}
-            >
-              {cat === 'Optional' ? 'Optional / Restricted' : cat}
-            </button>
-          ))}
-        </div>
-
-        <select
-          value={selectedMonth}
-          onChange={(e) => setSelectedMonth(e.target.value)}
-          aria-label="Filter holidays by month"
-          className="h-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-xs font-semibold text-slate-700 dark:text-slate-200"
-        >
-          <option value="All">All Months</option>
-          <option value="November">November</option>
-          <option value="December">December</option>
-        </select>
-      </div>
-
-      {/* Holiday List Cards */}
-      <div className="space-y-3">
-        {filteredHolidays.length === 0 ? (
-          <div className="py-12 px-4 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 text-center space-y-2">
-            <div className="w-10 h-10 mx-auto rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
-              <Calendar className="w-5 h-5" />
-            </div>
-            <p className="text-sm font-bold text-slate-900 dark:text-white">No holidays found</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              No corporate or statutory holidays match the selected category or month filter.
-            </p>
-          </div>
-        ) : (
-          filteredHolidays.map((holiday) => (
-            <div
-              key={holiday.id}
-            data-testid={`holiday-card-${holiday.id}`}
-            className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 shadow-2xs"
-          >
-            <div className="flex items-start gap-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 flex flex-col items-center justify-center shrink-0 font-mono">
-                <span className="text-[10px] font-semibold uppercase">
-                  {holiday.month.slice(0, 3)}
-                </span>
-                <span className="text-sm font-bold tabular-nums">
-                  {holiday.date.split('-')[2] || '01'}
-                </span>
-              </div>
-
-              <div className="space-y-1">
-                <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                  <span className="font-semibold text-indigo-600 dark:text-indigo-400">
-                    {holiday.category}
-                  </span>
-                  <span>·</span>
-                  <span>{holiday.dayOfWeek}</span>
-                  <span>·</span>
-                  <span className="inline-flex items-center gap-1">
-                    <MapPin className="w-3 h-3" />
-                    {holiday.location}
-                  </span>
-                </div>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                  {holiday.name}
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {holiday.description}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => setViewingHoliday(holiday)}
-                className="min-h-[38px] px-3 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 cursor-pointer"
-              >
-                Details
-              </button>
-              {canEdit && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setEditingHoliday(holiday)}
-                    aria-label={`Edit ${holiday.name}`}
-                    className="min-w-[38px] min-h-[38px] rounded-xl text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 flex items-center justify-center cursor-pointer"
-                  >
-                    <Edit3 className="w-4 h-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(holiday.id, holiday.name)}
-                    aria-label={`Delete ${holiday.name}`}
-                    className="min-w-[38px] min-h-[38px] rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 flex items-center justify-center cursor-pointer"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Add / Edit Holiday Modal */}
-      {editingHoliday && (
-        <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/55 backdrop-blur-xs p-0 sm:p-4"
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className="w-full max-w-md rounded-t-3xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                {editingHoliday.id ? 'Edit Holiday' : 'Add Company Holiday'}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setEditingHoliday(null)}
-                aria-label="Close holiday modal"
-                className="min-w-[40px] min-h-[40px] rounded-xl flex items-center justify-center text-slate-400 cursor-pointer"
-              >
-                <X className="w-4.5 h-4.5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveHoliday} className="space-y-3.5">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Holiday Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={editingHoliday.name || ''}
-                  onChange={(e) =>
-                    setEditingHoliday({ ...editingHoliday, name: e.target.value })
-                  }
-                  placeholder="e.g. Founder's Day Observance"
-                  className="w-full h-11 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 text-sm text-slate-900 dark:text-slate-100"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Date
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={editingHoliday.date || ''}
-                    onChange={(e) =>
-                      setEditingHoliday({
-                        ...editingHoliday,
-                        date: e.target.value,
-                      })
-                    }
-                    className="w-full h-11 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 text-sm font-mono text-slate-900 dark:text-slate-100"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Category
-                  </label>
-                  <select
-                    value={editingHoliday.category || 'National'}
-                    onChange={(e) =>
-                      setEditingHoliday({
-                        ...editingHoliday,
-                        category: e.target.value as HolidayCategory,
-                      })
-                    }
-                    className="w-full h-11 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 text-sm text-slate-900 dark:text-slate-100"
-                  >
-                    <option value="National">National</option>
-                    <option value="Regional">Regional</option>
-                    <option value="Optional">Optional / Restricted</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Applicable Location
-                </label>
-                <input
-                  type="text"
-                  value={editingHoliday.location || ''}
-                  onChange={(e) =>
-                    setEditingHoliday({
-                      ...editingHoliday,
-                      location: e.target.value,
-                    })
-                  }
-                  className="w-full h-11 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 text-sm text-slate-900 dark:text-slate-100"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Description
-                </label>
-                <input
-                  type="text"
-                  value={editingHoliday.description || ''}
-                  onChange={(e) =>
-                    setEditingHoliday({
-                      ...editingHoliday,
-                      description: e.target.value,
-                    })
-                  }
-                  className="w-full h-11 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 text-sm text-slate-900 dark:text-slate-100"
-                />
-              </div>
-
-              <div className="pt-2 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setEditingHoliday(null)}
-                  className="min-h-[44px] px-4 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="min-h-[44px] px-5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold cursor-pointer"
-                >
-                  {isSaving ? 'Saving...' : 'Save Holiday'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Holiday Details Modal */}
-      {viewingHoliday && (
-        <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/55 backdrop-blur-xs p-0 sm:p-4"
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className="w-full max-w-md rounded-t-3xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 space-y-3 shadow-2xl">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
-                {viewingHoliday.category} Holiday · {viewingHoliday.displayDate}
-              </span>
-              <button
-                type="button"
-                onClick={() => setViewingHoliday(null)}
-                aria-label="Close holiday details"
-                className="min-w-[36px] min-h-[36px] rounded-xl flex items-center justify-center text-slate-400 cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">
-              {viewingHoliday.name}
-            </h3>
-            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-              {viewingHoliday.description}
-            </p>
-            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500">
-              Location: {viewingHoliday.location} · Day: {viewingHoliday.dayOfWeek}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+    <HolidayCalendarModule
+      initialHolidays={holidays}
+      canEdit={canEdit}
+      onSuccessToast={onSuccessToast}
+    />
   );
 }

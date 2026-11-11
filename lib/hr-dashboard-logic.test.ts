@@ -21,16 +21,19 @@ import {
   filterMoreModules,
 } from './hr-dashboard-logic';
 
-test('Initial HR Admin Dashboard state populates all 5 KPIs without fake zeros', () => {
+test('Initial HR Admin Dashboard state initializes clean attendance, shifts, rosters, and departments without dummy data', () => {
   const state = createInitialHrDashboardState();
   assert.equal(state.kpis.workforce.totalActive, 348);
-  assert.equal(state.kpis.attendance.ratePercentage, 95.4);
-  assert.equal(state.kpis.approvals.totalPending, 6);
-  assert.equal(state.kpis.recruitment.openPositions, 12);
+  assert.equal(state.kpis.attendance.ratePercentage, 0);
+  assert.equal(state.kpis.attendance.present, 0);
+  assert.equal(state.kpis.approvals.totalPending, 0);
+  assert.equal(state.approvals.length, 0);
+  assert.equal(state.kpis.recruitment.openPositions, 0);
   assert.equal(state.kpis.payroll.netPayableFormatted, '$1,842,500');
-  assert.equal(state.shifts.length, 4);
-  assert.equal(state.rosters.length, 5);
-  assert.equal(state.holidays.length, 5);
+  assert.equal(state.departments.length, 0);
+  assert.equal(state.shifts.length, 0);
+  assert.equal(state.rosters.length, 0);
+  assert.equal(state.holidays.length, 19);
 });
 
 test('Role-Based Access Control (canManageHrAdminActions) authorizes hr_admin, super_admin, and manager', () => {
@@ -56,26 +59,94 @@ test('Attendance percentage calculator computes accurate donut chart percentages
 });
 
 test('Approval queue filtering and decision transitions recompute badge counts accurately', () => {
-  const state = createInitialHrDashboardState();
-  const leaves = filterApprovals(state.approvals, 'Leave Requests', 'Pending');
+  const sampleApprovals = [
+    {
+      id: 'APR-901',
+      employeeName: 'Test Employee 1',
+      employeeId: 'EMP-1',
+      department: 'Product & Design',
+      category: 'Leave Requests' as const,
+      requestType: 'Annual Leave',
+      requestDate: 'Nov 16 – Nov 20, 2026',
+      durationOrAmount: '5 Days',
+      reason: 'Vacation',
+      status: 'Pending' as const,
+      avatarInitials: 'TE',
+    },
+    {
+      id: 'APR-902',
+      employeeName: 'Test Employee 2',
+      employeeId: 'EMP-2',
+      department: 'Engineering',
+      category: 'Leave Requests' as const,
+      requestType: 'Study Leave',
+      requestDate: 'Dec 03 – Dec 04, 2026',
+      durationOrAmount: '2 Days',
+      reason: 'Conference',
+      status: 'Pending' as const,
+      avatarInitials: 'T2',
+    },
+    {
+      id: 'APR-903',
+      employeeName: 'Test Employee 3',
+      employeeId: 'EMP-3',
+      department: 'Engineering',
+      category: 'Expense Claims' as const,
+      requestType: 'Travel Claim',
+      requestDate: 'Nov 01, 2026',
+      durationOrAmount: '$200',
+      reason: 'Client visit',
+      status: 'Pending' as const,
+      avatarInitials: 'T3',
+    },
+  ];
+  const leaves = filterApprovals(sampleApprovals, 'Leave Requests', 'Pending');
   assert.equal(leaves.length, 2);
 
-  const updated = applyApprovalDecision(state.approvals, 'APR-901', 'Approved');
+  const updated = applyApprovalDecision(sampleApprovals, 'APR-901', 'Approved');
   const newCounts = recomputeApprovalCounts(updated);
-  assert.equal(newCounts.totalPending, 5);
+  assert.equal(newCounts.totalPending, 2);
   assert.equal(newCounts.leaveRequests, 1);
 });
 
 test('Roster and Holiday filters narrow items by department, category, and month', () => {
   const state = createInitialHrDashboardState();
-  const engRosters = filterRosterEntries(state.rosters, 'Engineering', '');
-  assert.equal(engRosters.length, 2);
+  const sampleRosters = [
+    {
+      id: 'RST-1',
+      employeeId: 'EMP-1',
+      employeeName: 'Test Engineer 1',
+      designation: 'Engineer',
+      department: 'Engineering',
+      avatarInitials: 'TE',
+      currentShift: 'General Shift',
+      weeklyOff: 'Sat, Sun',
+      swapStatus: 'None' as const,
+      rosterStatus: 'Published' as const,
+      schedule: [],
+    },
+    {
+      id: 'RST-2',
+      employeeId: 'EMP-2',
+      employeeName: 'Test Designer',
+      designation: 'Designer',
+      department: 'Product & Design',
+      avatarInitials: 'TD',
+      currentShift: 'Flexible Shift',
+      weeklyOff: 'Sat, Sun',
+      swapStatus: 'None' as const,
+      rosterStatus: 'Published' as const,
+      schedule: [],
+    },
+  ];
+  const engRosters = filterRosterEntries(sampleRosters, 'Engineering', '');
+  assert.equal(engRosters.length, 1);
 
   const nationalHolidays = filterHolidays(state.holidays, 'National', 'All');
-  assert.equal(nationalHolidays.length, 2);
+  assert.equal(nationalHolidays.length, 7);
 
   const decHolidays = filterHolidays(state.holidays, 'All', 'December');
-  assert.equal(decHolidays.length, 1);
+  assert.equal(decHolidays.length, 3);
 });
 
 test('Announcement Zod schema validates required title, description, priority, and expiry date', () => {
@@ -183,5 +254,32 @@ test('More Modules launcher provides 5 categorized groups, search filtering, and
   );
   assert.equal(commModules.length, 3);
 });
+
+test('addEmployeeFormSchema validates all 4 required workforce roles (Employee, Manager, Executive, IT-Admin)', async () => {
+  const { addEmployeeFormSchema, WORKFORCE_EMPLOYEE_ROLES } = await import(
+    './hr-dashboard-logic'
+  );
+  assert.deepEqual(WORKFORCE_EMPLOYEE_ROLES, [
+    'Employee',
+    'Manager',
+    'Executive',
+    'IT-Admin',
+  ]);
+
+  for (const role of WORKFORCE_EMPLOYEE_ROLES) {
+    const parsed = addEmployeeFormSchema.safeParse({
+      name: 'Rohan Verma',
+      email: 'rohan.verma@ofc360.com',
+      phone: '+91 98201 11223',
+      designation: 'Senior Engineer',
+      role,
+      department: 'Engineering',
+      location: 'Bengaluru · Global HQ',
+      shift: 'General Shift (09:30 - 18:30)',
+    });
+    assert.equal(parsed.success, true);
+  }
+});
+
 
 

@@ -23,6 +23,16 @@ export async function POST(
   const { slug } = await context.params;
   const action = slug.join('/');
 
+  if (action === 'logout') {
+    return NextResponse.json(
+      {
+        message: 'Session signed out successfully.',
+        status: 'ok',
+      },
+      { status: 200 }
+    );
+  }
+
   return NextResponse.json(
     {
       detail: `Authentication service endpoint "/${action}" requires a live backend service. Please connect your authentication API via NEXT_PUBLIC_API_BASE_URL.`,

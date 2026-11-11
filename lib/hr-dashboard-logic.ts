@@ -80,7 +80,15 @@ export interface RosterEntry {
   schedule: RosterDayAssignment[];
 }
 
-export type HolidayCategory = 'National' | 'Regional' | 'Optional';
+export type HolidayCategory =
+  | 'National'
+  | 'Gazetted'
+  | 'Restricted'
+  | 'Regional'
+  | 'Company'
+  | 'Optional';
+
+export type HolidayType = HolidayCategory;
 
 export interface HolidayItem {
   id: string;
@@ -90,8 +98,21 @@ export interface HolidayItem {
   month: string;
   dayOfWeek: string;
   category: HolidayCategory;
+  type?: HolidayType;
   location: string;
+  locations?: string[];
+  departments?: string[];
+  employeeCategory?: string;
   description: string;
+  recurring?: boolean;
+  isOptional?: boolean;
+  status?: 'Published' | 'Draft' | 'Unpublished';
+  instructions?: string;
+  createdDate?: string;
+  lastUpdated?: string;
+  optedInCount?: number;
+  selectionDeadline?: string;
+  userSelected?: boolean;
 }
 
 export type AnnouncementPriority = 'Urgent' | 'High' | 'Normal';
@@ -133,6 +154,15 @@ export interface UpcomingExit {
   initials: string;
 }
 
+export const WORKFORCE_EMPLOYEE_ROLES = [
+  'Employee',
+  'Manager',
+  'Executive',
+  'IT-Admin',
+] as const;
+
+export type WorkforceEmployeeRole = (typeof WORKFORCE_EMPLOYEE_ROLES)[number];
+
 export interface WorkforceEmployee {
   id: string;
   employeeId: string;
@@ -140,6 +170,7 @@ export interface WorkforceEmployee {
   email: string;
   phone: string;
   designation: string;
+  role?: WorkforceEmployeeRole | string;
   department: string;
   location: string;
   shift: string;
@@ -197,6 +228,21 @@ export interface PayrollCycleSummary {
   lastRunBy: string;
 }
 
+export interface FaceAttendanceLogItem {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  department: string;
+  shift: string;
+  punchType: 'Check-In' | 'Late Check-In' | 'Check-Out';
+  timestamp: string;
+  location: string;
+  confidenceScore: number;
+  livenessVerified: boolean;
+  initials: string;
+  snapshotDataUrl?: string;
+}
+
 export interface HrDashboardDataState {
   adminProfile: {
     name: string;
@@ -236,6 +282,7 @@ export interface HrDashboardDataState {
   };
   approvals: ApprovalItem[];
   departments: DepartmentAttendanceMetric[];
+  faceAttendanceLogs?: FaceAttendanceLogItem[];
   shifts: ShiftItem[];
   rosters: RosterEntry[];
   holidays: HolidayItem[];
@@ -309,6 +356,7 @@ export const addEmployeeFormSchema = z.object({
   email: z.string().trim().email('Valid work email is required'),
   phone: z.string().trim().min(7, 'Phone number is required'),
   designation: z.string().trim().min(2, 'Designation is required'),
+  role: z.enum(['Employee', 'Manager', 'Executive', 'IT-Admin']),
   department: z.string().trim().min(2, 'Department is required'),
   location: z.string().trim().min(2, 'Location is required'),
   shift: z.string().trim().min(2, 'Shift is required'),
@@ -439,350 +487,305 @@ export function filterRosterEntries(
 
 export function filterHolidays(
   holidays: HolidayItem[],
-  category: HolidayCategory | 'All',
-  month: string | 'All' = 'All'
+  category: HolidayCategory | 'All' = 'All',
+  month: string | 'All' = 'All',
+  location: string | 'All' = 'All',
+  department: string | 'All' = 'All',
+  searchQuery: string = '',
+  statusFilter: string = 'All',
+  isOptionalOnly: boolean = false,
+  yearFilter: string = 'All'
 ): HolidayItem[] {
+  const q = searchQuery.trim().toLowerCase();
   return holidays.filter((h) => {
     const matchesCat = category === 'All' || h.category === category;
-    const matchesMonth = month === 'All' || h.month === month;
-    return matchesCat && matchesMonth;
+    const matchesMonth = month === 'All' || h.month.toLowerCase() === month.toLowerCase();
+    const matchesLoc =
+      location === 'All' ||
+      h.location.toLowerCase().includes(location.toLowerCase()) ||
+      (h.locations && h.locations.some((l) => l.toLowerCase() === location.toLowerCase()));
+    const matchesDept =
+      department === 'All' ||
+      !h.departments ||
+      h.departments.includes('All Departments') ||
+      h.departments.some((d) => d.toLowerCase() === department.toLowerCase());
+    const matchesSearch =
+      q === '' ||
+      h.name.toLowerCase().includes(q) ||
+      h.description.toLowerCase().includes(q) ||
+      h.location.toLowerCase().includes(q) ||
+      h.category.toLowerCase().includes(q);
+    const matchesStatus =
+      statusFilter === 'All' || (h.status || 'Published') === statusFilter;
+    const matchesOptional =
+      !isOptionalOnly || h.category === 'Optional' || h.isOptional === true;
+    const matchesYear = yearFilter === 'All' || h.date.startsWith(yearFilter);
+
+    return (
+      matchesCat &&
+      matchesMonth &&
+      matchesLoc &&
+      matchesDept &&
+      matchesSearch &&
+      matchesStatus &&
+      matchesOptional &&
+      matchesYear
+    );
   });
 }
 
 export function createInitialHrDashboardState(): HrDashboardDataState {
-  const approvals: ApprovalItem[] = [
-    {
-      id: 'APR-901',
-      employeeName: 'Sora Takahashi',
-      employeeId: 'EMP-3603',
-      department: 'Product & Design',
-      category: 'Leave Requests',
-      requestType: 'Annual Privilege Leave',
-      requestDate: 'Nov 16 – Nov 20, 2026',
-      durationOrAmount: '5 Days',
-      reason: 'Family travel to Kyoto; design handoff completed with Elena.',
-      status: 'Pending',
-      avatarInitials: 'ST',
-    },
-    {
-      id: 'APR-902',
-      employeeName: 'Elena Rostova',
-      employeeId: 'EMP-3601',
-      department: 'Engineering',
-      category: 'Leave Requests',
-      requestType: 'Conference & Study Leave',
-      requestDate: 'Dec 03 – Dec 04, 2026',
-      durationOrAmount: '2 Days',
-      reason: 'Speaking at KubeCon Cloud Native Summit.',
-      status: 'Pending',
-      avatarInitials: 'ER',
-    },
-    {
-      id: 'APR-903',
-      employeeName: 'Rohan Deshmukh',
-      employeeId: 'EMP-3614',
-      department: 'Engineering',
-      category: 'Attendance Regularizations',
-      requestType: 'Biometric Missed Punch',
-      requestDate: 'Nov 03, 2026 · 09:02 AM',
-      durationOrAmount: '09:02 AM – 06:34 PM',
-      reason: 'Client architecture workshop at Bengaluru Tech Park.',
-      status: 'Pending',
-      avatarInitials: 'RD',
-    },
-    {
-      id: 'APR-904',
-      employeeName: 'Ananya Krishnan',
-      employeeId: 'EMP-3619',
-      department: 'Enterprise Sales',
-      category: 'Attendance Regularizations',
-      requestType: 'Field Visit Check-In',
-      requestDate: 'Nov 02, 2026 · 10:15 AM',
-      durationOrAmount: '10:15 AM – 07:10 PM',
-      reason: 'On-site enterprise contract renewal meeting in Mumbai.',
-      status: 'Pending',
-      avatarInitials: 'AK',
-    },
-    {
-      id: 'APR-905',
-      employeeName: 'David Chen',
-      employeeId: 'EMP-3604',
-      department: 'Finance & Legal',
-      category: 'Expense Claims',
-      requestType: 'Q4 Audit Travel & Lodging',
-      requestDate: 'Nov 01, 2026',
-      durationOrAmount: '$1,420.00',
-      reason: 'Singapore statutory compliance audit & legal filing.',
-      status: 'Pending',
-      avatarInitials: 'DC',
-    },
-    {
-      id: 'APR-906',
-      employeeName: 'Vikramaditya Nair',
-      employeeId: 'EMP-3622',
-      department: 'Customer Success',
-      category: 'Expense Claims',
-      requestType: 'Enterprise Client Summit Dinner',
-      requestDate: 'Oct 29, 2026',
-      durationOrAmount: '$385.00',
-      reason: 'Quarterly executive business review hospitality.',
-      status: 'Pending',
-      avatarInitials: 'VN',
-    },
-    {
-      id: 'APR-907',
-      employeeName: 'Amara Okafor',
-      employeeId: 'EMP-3605',
-      department: 'Engineering',
-      category: 'Leave Requests',
-      requestType: 'Medical Recovery Leave',
-      requestDate: 'Nov 02 – Nov 06, 2026',
-      durationOrAmount: '5 Days',
-      reason: 'Scheduled dental procedure and recovery.',
-      status: 'Approved',
-      avatarInitials: 'AO',
-    },
-  ];
+  const approvals: ApprovalItem[] = [];
 
-  const departments: DepartmentAttendanceMetric[] = [
-    {
-      id: 'DEPT-01',
-      department: 'Engineering',
-      totalEmployees: 142,
-      presentCount: 131,
-      absentCount: 2,
-      lateCount: 4,
-      onLeaveCount: 5,
-      attendancePercentage: 95.1,
-      headOfDept: 'Elena Rostova',
-    },
-    {
-      id: 'DEPT-02',
-      department: 'Product & Design',
-      totalEmployees: 48,
-      presentCount: 45,
-      absentCount: 0,
-      lateCount: 1,
-      onLeaveCount: 2,
-      attendancePercentage: 95.8,
-      headOfDept: 'Sora Takahashi',
-    },
-    {
-      id: 'DEPT-03',
-      department: 'Enterprise Sales',
-      totalEmployees: 64,
-      presentCount: 58,
-      absentCount: 1,
-      lateCount: 3,
-      onLeaveCount: 2,
-      attendancePercentage: 95.3,
-      headOfDept: 'Ananya Krishnan',
-    },
-    {
-      id: 'DEPT-04',
-      department: 'People Operations',
-      totalEmployees: 26,
-      presentCount: 25,
-      absentCount: 0,
-      lateCount: 0,
-      onLeaveCount: 1,
-      attendancePercentage: 96.2,
-      headOfDept: 'Marcus Vance',
-    },
-    {
-      id: 'DEPT-05',
-      department: 'Finance & Legal',
-      totalEmployees: 32,
-      presentCount: 30,
-      absentCount: 1,
-      lateCount: 1,
-      onLeaveCount: 0,
-      attendancePercentage: 96.9,
-      headOfDept: 'David Chen',
-    },
-    {
-      id: 'DEPT-06',
-      department: 'Customer Success',
-      totalEmployees: 36,
-      presentCount: 33,
-      absentCount: 1,
-      lateCount: 1,
-      onLeaveCount: 1,
-      attendancePercentage: 94.4,
-      headOfDept: 'Vikramaditya Nair',
-    },
-  ];
+  const departments: DepartmentAttendanceMetric[] = [];
 
-  const shifts: ShiftItem[] = [
-    {
-      id: 'SHF-01',
-      name: 'Morning Shift',
-      code: 'MS',
-      startTime: '06:30 AM',
-      endTime: '03:30 PM',
-      breakDuration: '45 mins',
-      assignedEmployees: 68,
-      allowance: '$15 / day',
-      status: 'Active',
-      departments: ['Customer Success', 'Engineering'],
-    },
-    {
-      id: 'SHF-02',
-      name: 'General Shift',
-      code: 'GS',
-      startTime: '09:30 AM',
-      endTime: '06:30 PM',
-      breakDuration: '60 mins',
-      assignedEmployees: 194,
-      allowance: 'Standard',
-      status: 'Active',
-      departments: ['Engineering', 'Product & Design', 'People Operations', 'Finance & Legal'],
-    },
-    {
-      id: 'SHF-03',
-      name: 'Night Shift',
-      code: 'NS',
-      startTime: '09:00 PM',
-      endTime: '06:00 AM',
-      breakDuration: '60 mins',
-      assignedEmployees: 42,
-      allowance: '$35 / night',
-      status: 'Active',
-      departments: ['Engineering', 'Customer Success'],
-    },
-    {
-      id: 'SHF-04',
-      name: 'Flexible Shift',
-      code: 'FLX',
-      startTime: 'Core 11:00 AM',
-      endTime: '08:00 PM',
-      breakDuration: '60 mins',
-      assignedEmployees: 44,
-      allowance: '$10 / remote',
-      status: 'Active',
-      departments: ['Product & Design', 'Enterprise Sales'],
-    },
-  ];
+  const shifts: ShiftItem[] = [];
 
-  const rosters: RosterEntry[] = [
-    {
-      id: 'RST-101',
-      employeeId: 'EMP-3601',
-      employeeName: 'Elena Rostova',
-      designation: 'Principal Systems Architect',
-      department: 'Engineering',
-      avatarInitials: 'ER',
-      currentShift: 'General Shift (09:30 – 18:30)',
-      weeklyOff: 'Sat, Sun',
-      swapStatus: 'None',
-      rosterStatus: 'Published',
-      schedule: [
-        { day: 'Mon', date: '02', shiftCode: 'GS', shiftLabel: 'General' },
-        { day: 'Tue', date: '03', shiftCode: 'GS', shiftLabel: 'General' },
-        { day: 'Wed', date: '04', shiftCode: 'GS', shiftLabel: 'General' },
-        { day: 'Thu', date: '05', shiftCode: 'FLX', shiftLabel: 'Flexible' },
-        { day: 'Fri', date: '06', shiftCode: 'GS', shiftLabel: 'General' },
-        { day: 'Sat', date: '07', shiftCode: 'OFF', shiftLabel: 'Weekly Off' },
-        { day: 'Sun', date: '08', shiftCode: 'OFF', shiftLabel: 'Weekly Off' },
-      ],
-    },
-    {
-      id: 'RST-102',
-      employeeId: 'EMP-3614',
-      employeeName: 'Rohan Deshmukh',
-      designation: 'Senior SRE Lead',
-      department: 'Engineering',
-      avatarInitials: 'RD',
-      currentShift: 'Morning Shift (06:30 – 15:30)',
-      weeklyOff: 'Sun, Mon',
-      swapStatus: 'Swap Requested',
-      swapTargetEmployee: 'Kabir Mehta (EMP-3629)',
-      rosterStatus: 'Published',
-      schedule: [
-        { day: 'Mon', date: '02', shiftCode: 'OFF', shiftLabel: 'Weekly Off' },
-        { day: 'Tue', date: '03', shiftCode: 'MS', shiftLabel: 'Morning' },
-        { day: 'Wed', date: '04', shiftCode: 'MS', shiftLabel: 'Morning' },
-        {
-          day: 'Thu',
-          date: '05',
-          shiftCode: 'NS',
-          shiftLabel: 'Night',
-          isSwapRequested: true,
-        },
-        { day: 'Fri', date: '06', shiftCode: 'MS', shiftLabel: 'Morning' },
-        { day: 'Sat', date: '07', shiftCode: 'MS', shiftLabel: 'Morning' },
-        { day: 'Sun', date: '08', shiftCode: 'OFF', shiftLabel: 'Weekly Off' },
-      ],
-    },
-    {
-      id: 'RST-103',
-      employeeId: 'EMP-3603',
-      employeeName: 'Sora Takahashi',
-      designation: 'Staff Product Designer',
-      department: 'Product & Design',
-      avatarInitials: 'ST',
-      currentShift: 'Flexible Shift (Core 11:00 – 20:00)',
-      weeklyOff: 'Sat, Sun',
-      swapStatus: 'None',
-      rosterStatus: 'Published',
-      schedule: [
-        { day: 'Mon', date: '02', shiftCode: 'FLX', shiftLabel: 'Flexible' },
-        { day: 'Tue', date: '03', shiftCode: 'FLX', shiftLabel: 'Flexible' },
-        { day: 'Wed', date: '04', shiftCode: 'GS', shiftLabel: 'General' },
-        { day: 'Thu', date: '05', shiftCode: 'FLX', shiftLabel: 'Flexible' },
-        { day: 'Fri', date: '06', shiftCode: 'FLX', shiftLabel: 'Flexible' },
-        { day: 'Sat', date: '07', shiftCode: 'OFF', shiftLabel: 'Weekly Off' },
-        { day: 'Sun', date: '08', shiftCode: 'OFF', shiftLabel: 'Weekly Off' },
-      ],
-    },
-    {
-      id: 'RST-104',
-      employeeId: 'EMP-3622',
-      employeeName: 'Vikramaditya Nair',
-      designation: 'Global Support Lead',
-      department: 'Customer Success',
-      avatarInitials: 'VN',
-      currentShift: 'Night Shift (21:00 – 06:00)',
-      weeklyOff: 'Fri, Sat',
-      swapStatus: 'Swap Approved',
-      swapTargetEmployee: 'Meera Iyer (EMP-3631)',
-      rosterStatus: 'Published',
-      schedule: [
-        { day: 'Mon', date: '02', shiftCode: 'NS', shiftLabel: 'Night' },
-        { day: 'Tue', date: '03', shiftCode: 'NS', shiftLabel: 'Night' },
-        { day: 'Wed', date: '04', shiftCode: 'NS', shiftLabel: 'Night' },
-        { day: 'Thu', date: '05', shiftCode: 'NS', shiftLabel: 'Night' },
-        { day: 'Fri', date: '06', shiftCode: 'OFF', shiftLabel: 'Weekly Off' },
-        { day: 'Sat', date: '07', shiftCode: 'OFF', shiftLabel: 'Weekly Off' },
-        { day: 'Sun', date: '08', shiftCode: 'NS', shiftLabel: 'Night' },
-      ],
-    },
-    {
-      id: 'RST-105',
-      employeeId: 'EMP-3604',
-      employeeName: 'David Chen',
-      designation: 'Director of FP&A',
-      department: 'Finance & Legal',
-      avatarInitials: 'DC',
-      currentShift: 'General Shift (09:30 – 18:30)',
-      weeklyOff: 'Sat, Sun',
-      swapStatus: 'None',
-      rosterStatus: 'Published',
-      schedule: [
-        { day: 'Mon', date: '02', shiftCode: 'GS', shiftLabel: 'General' },
-        { day: 'Tue', date: '03', shiftCode: 'GS', shiftLabel: 'General' },
-        { day: 'Wed', date: '04', shiftCode: 'GS', shiftLabel: 'General' },
-        { day: 'Thu', date: '05', shiftCode: 'GS', shiftLabel: 'General' },
-        { day: 'Fri', date: '06', shiftCode: 'GS', shiftLabel: 'General' },
-        { day: 'Sat', date: '07', shiftCode: 'OFF', shiftLabel: 'Weekly Off' },
-        { day: 'Sun', date: '08', shiftCode: 'OFF', shiftLabel: 'Weekly Off' },
-      ],
-    },
-  ];
+  const rosters: RosterEntry[] = [];
 
   const holidays: HolidayItem[] = [
     {
       id: 'HOL-01',
+      name: "New Year's Day",
+      date: '2026-01-01',
+      displayDate: 'Jan 01, 2026',
+      month: 'January',
+      dayOfWeek: 'Thursday',
+      category: 'National',
+      location: 'Global · All Hubs',
+      locations: ['Jaipur', 'Bangalore', 'Hyderabad', 'Delhi', 'Global'],
+      departments: ['All Departments'],
+      employeeCategory: 'All Employees',
+      description: 'Global statutory celebration for the start of the new calendar year.',
+      recurring: true,
+      isOptional: false,
+      status: 'Published',
+      instructions: 'All enterprise offices and support hubs remain closed.',
+      createdDate: '2026-01-01',
+      lastUpdated: '2026-01-01',
+    },
+    {
+      id: 'HOL-02',
+      name: 'Republic Day of India',
+      date: '2026-01-26',
+      displayDate: 'Jan 26, 2026',
+      month: 'January',
+      dayOfWeek: 'Monday',
+      category: 'National',
+      location: 'India · All Hubs',
+      locations: ['Jaipur', 'Bangalore', 'Hyderabad', 'Delhi'],
+      departments: ['All Departments'],
+      employeeCategory: 'All Employees',
+      description: 'National statutory holiday celebrating the Constitution of India.',
+      recurring: true,
+      isOptional: false,
+      status: 'Published',
+      instructions: 'Mandatory paid holiday for all Indian office locations.',
+      createdDate: '2026-01-02',
+      lastUpdated: '2026-01-02',
+    },
+    {
+      id: 'HOL-03',
+      name: 'Maha Shivratri',
+      date: '2026-02-15',
+      displayDate: 'Feb 15, 2026',
+      month: 'February',
+      dayOfWeek: 'Sunday',
+      category: 'Gazetted',
+      location: 'Jaipur · Delhi · Hyderabad',
+      locations: ['Jaipur', 'Delhi', 'Hyderabad'],
+      departments: ['All Departments'],
+      employeeCategory: 'All Employees',
+      description: 'Gazetted religious observance across North and South regional hubs.',
+      recurring: true,
+      isOptional: false,
+      status: 'Published',
+      instructions: 'Official holiday for applicable regional branches.',
+      createdDate: '2026-01-05',
+      lastUpdated: '2026-01-05',
+    },
+    {
+      id: 'HOL-04',
+      name: 'Holi / Festival of Colors',
+      date: '2026-03-04',
+      displayDate: 'Mar 04, 2026',
+      month: 'March',
+      dayOfWeek: 'Wednesday',
+      category: 'Gazetted',
+      location: 'India · All Hubs',
+      locations: ['Jaipur', 'Bangalore', 'Hyderabad', 'Delhi'],
+      departments: ['All Departments'],
+      employeeCategory: 'All Employees',
+      description: 'Gazetted national festival of spring celebration.',
+      recurring: true,
+      isOptional: false,
+      status: 'Published',
+      instructions: 'No shift roster scheduling allowed on this date.',
+      createdDate: '2026-01-05',
+      lastUpdated: '2026-01-05',
+    },
+    {
+      id: 'HOL-05',
+      name: 'Good Friday',
+      date: '2026-04-03',
+      displayDate: 'Apr 03, 2026',
+      month: 'April',
+      dayOfWeek: 'Friday',
+      category: 'Regional',
+      location: 'Bangalore · Hyderabad · Global',
+      locations: ['Bangalore', 'Hyderabad', 'Global'],
+      departments: ['All Departments'],
+      employeeCategory: 'All Employees',
+      description: 'Statutory holiday for Southern technology hubs and international teams.',
+      recurring: true,
+      isOptional: false,
+      status: 'Published',
+      instructions: 'Emergency on-call engineers receive 2x holiday compensation.',
+      createdDate: '2026-01-10',
+      lastUpdated: '2026-01-10',
+    },
+    {
+      id: 'HOL-06',
+      name: 'Dr. B.R. Ambedkar Jayanti',
+      date: '2026-04-14',
+      displayDate: 'Apr 14, 2026',
+      month: 'April',
+      dayOfWeek: 'Tuesday',
+      category: 'National',
+      location: 'India · All Hubs',
+      locations: ['Jaipur', 'Bangalore', 'Hyderabad', 'Delhi'],
+      departments: ['All Departments'],
+      employeeCategory: 'All Employees',
+      description: "National gazetted holiday honoring the chief architect of India's Constitution.",
+      recurring: true,
+      isOptional: false,
+      status: 'Published',
+      instructions: 'Enterprise offices closed.',
+      createdDate: '2026-01-10',
+      lastUpdated: '2026-01-10',
+    },
+    {
+      id: 'HOL-07',
+      name: "International Workers' Day",
+      date: '2026-05-01',
+      displayDate: 'May 01, 2026',
+      month: 'May',
+      dayOfWeek: 'Friday',
+      category: 'Regional',
+      location: 'Jaipur · Delhi · Bangalore',
+      locations: ['Jaipur', 'Delhi', 'Bangalore'],
+      departments: ['All Departments'],
+      employeeCategory: 'All Employees',
+      description: 'Labor Day observance across regional corporate units.',
+      recurring: true,
+      isOptional: false,
+      status: 'Published',
+      instructions: 'Applies to state offices and statutory operations.',
+      createdDate: '2026-01-15',
+      lastUpdated: '2026-01-15',
+    },
+    {
+      id: 'HOL-08',
+      name: 'Eid-ul-Fitr',
+      date: '2026-05-20',
+      displayDate: 'May 20, 2026',
+      month: 'May',
+      dayOfWeek: 'Wednesday',
+      category: 'Gazetted',
+      location: 'Hyderabad · Delhi · Jaipur',
+      locations: ['Hyderabad', 'Delhi', 'Jaipur'],
+      departments: ['All Departments'],
+      employeeCategory: 'All Employees',
+      description: 'Gazetted festival holiday based on lunar moon sighting.',
+      recurring: false,
+      isOptional: false,
+      status: 'Published',
+      instructions: 'Date subject to official government moon sighting notification.',
+      createdDate: '2026-01-15',
+      lastUpdated: '2026-01-15',
+    },
+    {
+      id: 'HOL-09',
+      name: 'Independence Day of India',
+      date: '2026-08-15',
+      displayDate: 'Aug 15, 2026',
+      month: 'August',
+      dayOfWeek: 'Saturday',
+      category: 'National',
+      location: 'India · All Hubs',
+      locations: ['Jaipur', 'Bangalore', 'Hyderabad', 'Delhi'],
+      departments: ['All Departments'],
+      employeeCategory: 'All Employees',
+      description: 'National holiday celebrating Indian Independence.',
+      recurring: true,
+      isOptional: false,
+      status: 'Published',
+      instructions: 'Flag hoisting ceremony organized at Delhi & Jaipur headquarters.',
+      createdDate: '2026-01-20',
+      lastUpdated: '2026-01-20',
+    },
+    {
+      id: 'HOL-10',
+      name: 'Ganesh Chaturthi',
+      date: '2026-09-14',
+      displayDate: 'Sep 14, 2026',
+      month: 'September',
+      dayOfWeek: 'Monday',
+      category: 'Regional',
+      location: 'Hyderabad · Bangalore',
+      locations: ['Hyderabad', 'Bangalore'],
+      departments: ['All Departments'],
+      employeeCategory: 'All Employees',
+      description: 'Regional festive holiday across West & South IT hubs.',
+      recurring: true,
+      isOptional: false,
+      status: 'Published',
+      instructions: 'Regional holiday for Hyderabad and Bangalore campus staff.',
+      createdDate: '2026-02-01',
+      lastUpdated: '2026-02-01',
+    },
+    {
+      id: 'HOL-11',
+      name: 'Mahatma Gandhi Jayanti',
+      date: '2026-10-02',
+      displayDate: 'Oct 02, 2026',
+      month: 'October',
+      dayOfWeek: 'Friday',
+      category: 'National',
+      location: 'India · All Hubs',
+      locations: ['Jaipur', 'Bangalore', 'Hyderabad', 'Delhi'],
+      departments: ['All Departments'],
+      employeeCategory: 'All Employees',
+      description: 'National statutory holiday honoring Mahatma Gandhi.',
+      recurring: true,
+      isOptional: false,
+      status: 'Published',
+      instructions: 'Statutory closed day for all enterprise units.',
+      createdDate: '2026-02-01',
+      lastUpdated: '2026-02-01',
+    },
+    {
+      id: 'HOL-12',
+      name: 'Dussehra / Vijayadashami',
+      date: '2026-10-20',
+      displayDate: 'Oct 20, 2026',
+      month: 'October',
+      dayOfWeek: 'Tuesday',
+      category: 'Gazetted',
+      location: 'India · All Hubs',
+      locations: ['Jaipur', 'Bangalore', 'Hyderabad', 'Delhi'],
+      departments: ['All Departments'],
+      employeeCategory: 'All Employees',
+      description: 'Gazetted national festival celebrating the victory of good over evil.',
+      recurring: true,
+      isOptional: false,
+      status: 'Published',
+      instructions: 'Enterprise-wide holiday.',
+      createdDate: '2026-02-10',
+      lastUpdated: '2026-02-10',
+    },
+    {
+      id: 'HOL-13',
       name: 'Diwali / Deepavali Festival',
       date: '2026-11-08',
       displayDate: 'Nov 08, 2026',
@@ -790,21 +793,39 @@ export function createInitialHrDashboardState(): HrDashboardDataState {
       dayOfWeek: 'Sunday',
       category: 'National',
       location: 'India · All Hubs',
+      locations: ['Jaipur', 'Bangalore', 'Hyderabad', 'Delhi'],
+      departments: ['All Departments'],
+      employeeCategory: 'All Employees',
       description: 'Festival of Lights statutory observance across India offices.',
+      recurring: true,
+      isOptional: false,
+      status: 'Published',
+      instructions: 'Enterprise gift vouchers distributed prior to holiday.',
+      createdDate: '2026-02-10',
+      lastUpdated: '2026-02-10',
     },
     {
-      id: 'HOL-02',
+      id: 'HOL-14',
       name: 'Govardhan Puja / Bali Pratipada',
       date: '2026-11-09',
       displayDate: 'Nov 09, 2026',
       month: 'November',
       dayOfWeek: 'Monday',
       category: 'Regional',
-      location: 'Mumbai · Bengaluru · Delhi',
+      location: 'Jaipur · Delhi · Bangalore',
+      locations: ['Jaipur', 'Delhi', 'Bangalore'],
+      departments: ['All Departments'],
+      employeeCategory: 'All Employees',
       description: 'Regional public holiday following Diwali.',
+      recurring: true,
+      isOptional: false,
+      status: 'Published',
+      instructions: 'Applicable to Jaipur, Delhi, and Bangalore branches.',
+      createdDate: '2026-02-15',
+      lastUpdated: '2026-02-15',
     },
     {
-      id: 'HOL-03',
+      id: 'HOL-15',
       name: 'Guru Nanak Jayanti',
       date: '2026-11-24',
       displayDate: 'Nov 24, 2026',
@@ -812,21 +833,42 @@ export function createInitialHrDashboardState(): HrDashboardDataState {
       dayOfWeek: 'Tuesday',
       category: 'Optional',
       location: 'Global · Restricted Holiday',
+      locations: ['Jaipur', 'Bangalore', 'Hyderabad', 'Delhi', 'Global'],
+      departments: ['All Departments'],
+      employeeCategory: 'All Employees',
       description: 'Eligible under annual restricted/floating holiday quota.',
+      recurring: true,
+      isOptional: true,
+      status: 'Published',
+      instructions: 'Employees must submit floating holiday selection in OFC360 by Nov 15.',
+      createdDate: '2026-02-15',
+      lastUpdated: '2026-02-15',
+      optedInCount: 42,
+      selectionDeadline: '2026-11-15',
+      userSelected: true,
     },
     {
-      id: 'HOL-04',
+      id: 'HOL-16',
       name: 'Thanksgiving Day',
       date: '2026-11-26',
       displayDate: 'Nov 26, 2026',
       month: 'November',
       dayOfWeek: 'Thursday',
       category: 'Regional',
-      location: 'US · New York & San Francisco',
+      location: 'Global · US Operations',
+      locations: ['Global'],
+      departments: ['Operations', 'Sales'],
+      employeeCategory: 'Full-Time',
       description: 'Federal statutory holiday for US workspace operations.',
+      recurring: true,
+      isOptional: false,
+      status: 'Published',
+      instructions: 'US desk support handled by APAC backup team.',
+      createdDate: '2026-03-01',
+      lastUpdated: '2026-03-01',
     },
     {
-      id: 'HOL-05',
+      id: 'HOL-17',
       name: 'Year-End Winter Holiday & Christmas',
       date: '2026-12-25',
       displayDate: 'Dec 25, 2026',
@@ -834,343 +876,73 @@ export function createInitialHrDashboardState(): HrDashboardDataState {
       dayOfWeek: 'Friday',
       category: 'National',
       location: 'Global · All Hubs',
+      locations: ['Jaipur', 'Bangalore', 'Hyderabad', 'Delhi', 'Global'],
+      departments: ['All Departments'],
+      employeeCategory: 'All Employees',
       description: 'Global enterprise-wide statutory holiday.',
-    },
-  ];
-
-  const announcements: AnnouncementItem[] = [
-    {
-      id: 'ANN-301',
-      title: 'Q4 Annual Performance & 360° Calibration Window Open',
-      description:
-        'All department heads and managers must complete peer nominations and self-reviews in OFC360 before November 18, 2026.',
-      publishedDate: 'Nov 04, 2026 · 08:45 AM',
-      expiryDate: '2026-11-20',
-      department: 'All Departments',
-      targetAudience: 'All Full-Time Employees',
-      category: 'Policy Update',
-      priority: 'High',
-      author: 'Aarav Sharma (HR Admin)',
+      recurring: true,
+      isOptional: false,
       status: 'Published',
+      instructions: 'Annual global shutdown day.',
+      createdDate: '2026-03-01',
+      lastUpdated: '2026-03-01',
     },
     {
-      id: 'ANN-302',
-      title: 'November Payroll Cut-off & Tax Investment Proof Submission',
-      description:
-        'Submit flexible benefit claims and revised tax declarations by Nov 20 to reflect in the Nov 28 payout cycle.',
-      publishedDate: 'Nov 02, 2026 · 11:20 AM',
-      expiryDate: '2026-11-25',
-      department: 'Finance & People Ops',
-      targetAudience: 'Salaried Workforce',
-      category: 'Payroll & Benefits',
-      priority: 'Urgent',
-      author: 'Aarav Sharma (HR Admin)',
+      id: 'HOL-18',
+      name: "New Year's Eve Floating Leave",
+      date: '2026-12-31',
+      displayDate: 'Dec 31, 2026',
+      month: 'December',
+      dayOfWeek: 'Thursday',
+      category: 'Optional',
+      location: 'Jaipur · Bangalore · Delhi',
+      locations: ['Jaipur', 'Bangalore', 'Delhi'],
+      departments: ['All Departments'],
+      employeeCategory: 'All Employees',
+      description: 'Year-end optional restricted holiday for team bonding.',
+      recurring: true,
+      isOptional: true,
       status: 'Published',
+      instructions: 'Claim before Dec 20, 2026.',
+      createdDate: '2026-03-05',
+      lastUpdated: '2026-03-05',
+      optedInCount: 18,
+      selectionDeadline: '2026-12-20',
+      userSelected: false,
     },
     {
-      id: 'ANN-303',
-      title: 'Updated Hybrid Work & Winter Shuttle Roster',
-      description:
-        'Updated shuttle timings for Morning and Night shifts are now live in the Shifts & Rosters tab.',
-      publishedDate: 'Oct 30, 2026 · 04:15 PM',
-      expiryDate: '2026-12-31',
-      department: 'Engineering & Customer Success',
-      targetAudience: 'Shift Personnel',
-      category: 'Company News',
-      priority: 'Normal',
-      author: 'Marcus Vance (VP People Ops)',
+      id: 'HOL-19',
+      name: "Founder's Day Observance",
+      date: '2026-12-18',
+      displayDate: 'Dec 18, 2026',
+      month: 'December',
+      dayOfWeek: 'Friday',
+      category: 'Company',
+      location: 'Global · All Hubs',
+      locations: ['Jaipur', 'Bangalore', 'Hyderabad', 'Delhi', 'Global'],
+      departments: ['All Departments'],
+      employeeCategory: 'All Employees',
+      description: 'Company-specific celebratory holiday and annual town hall.',
+      recurring: true,
+      isOptional: false,
       status: 'Published',
+      instructions: 'Town hall broadcast at 11:00 AM prior to holiday rest.',
+      createdDate: '2026-03-10',
+      lastUpdated: '2026-03-10',
     },
   ];
 
-  const joiners: UpcomingJoiner[] = [
-    {
-      id: 'JNR-01',
-      employeeId: 'EMP-3649',
-      name: 'Neha Singhania',
-      department: 'Engineering',
-      designation: 'Staff AI Platform Engineer',
-      joiningDate: 'Nov 09, 2026',
-      location: 'Bengaluru · Hybrid',
-      onboardingStatus: 'Laptop Provisioned',
-      initials: 'NS',
-    },
-    {
-      id: 'JNR-02',
-      employeeId: 'EMP-3650',
-      name: 'Lucas Meyer',
-      department: 'Product & Design',
-      designation: 'Lead Mobile Design Systems',
-      joiningDate: 'Nov 12, 2026',
-      location: 'Zurich · Hybrid',
-      onboardingStatus: 'Verified',
-      initials: 'LM',
-    },
-    {
-      id: 'JNR-03',
-      employeeId: 'EMP-3651',
-      name: 'Priya Subramanian',
-      department: 'Enterprise Sales',
-      designation: 'Regional Account Director',
-      joiningDate: 'Nov 16, 2026',
-      location: 'Singapore · Onsite',
-      onboardingStatus: 'Docs Pending',
-      initials: 'PS',
-    },
-  ];
+  const announcements: AnnouncementItem[] = [];
 
-  const exits: UpcomingExit[] = [
-    {
-      id: 'EXT-01',
-      employeeId: 'EMP-3588',
-      name: 'Siddharth Malhotra',
-      department: 'Engineering',
-      designation: 'Frontend Engineer II',
-      lastWorkingDay: 'Nov 14, 2026',
-      exitStatus: 'Handover Active',
-      initials: 'SM',
-    },
-    {
-      id: 'EXT-02',
-      employeeId: 'EMP-3542',
-      name: 'claire Dubois',
-      department: 'Customer Success',
-      designation: 'Implementation Specialist',
-      lastWorkingDay: 'Nov 27, 2026',
-      exitStatus: 'Clearance Pending',
-      initials: 'CD',
-    },
-  ];
+  const joiners: UpcomingJoiner[] = [];
 
-  const workforce: WorkforceEmployee[] = [
-    {
-      id: 'WF-01',
-      employeeId: 'EMP-3601',
-      name: 'Elena Rostova',
-      email: 'elena.rostova@ofc360.com',
-      phone: '+41 44 580 1290',
-      role: 'manager',
-      designation: 'Principal Systems Architect',
-      department: 'Engineering',
-      location: 'Zurich · Hybrid',
-      shift: 'General Shift',
-      status: 'Present',
-      attendanceRate: 99.4,
-      joiningDate: 'Jan 15, 2023',
-      initials: 'ER',
-      reportsTo: 'Aarav Sharma',
-    },
-    {
-      id: 'WF-02',
-      employeeId: 'EMP-3602',
-      name: 'Marcus Vance',
-      email: 'marcus.vance@ofc360.com',
-      phone: '+44 20 7946 0821',
-      role: 'executive',
-      designation: 'VP of Global People Operations',
-      department: 'People Operations',
-      location: 'London · Onsite',
-      shift: 'General Shift',
-      status: 'Present',
-      attendanceRate: 98.8,
-      joiningDate: 'Mar 04, 2022',
-      initials: 'MV',
-      reportsTo: 'Aarav Sharma',
-    },
-    {
-      id: 'WF-03',
-      employeeId: 'EMP-3603',
-      name: 'Sora Takahashi',
-      email: 'sora.takahashi@ofc360.com',
-      phone: '+81 3 5550 1920',
-      role: 'manager',
-      designation: 'Staff Product Designer',
-      department: 'Product & Design',
-      location: 'Tokyo · Remote',
-      shift: 'Flexible Shift',
-      status: 'Remote',
-      attendanceRate: 99.6,
-      joiningDate: 'Jul 18, 2023',
-      initials: 'ST',
-      reportsTo: 'Marcus Vance',
-    },
-    {
-      id: 'WF-04',
-      employeeId: 'EMP-3604',
-      name: 'David Chen',
-      email: 'david.chen@ofc360.com',
-      phone: '+65 6789 4321',
-      role: 'executive',
-      designation: 'Director of FP&A',
-      department: 'Finance & Legal',
-      location: 'Singapore · Onsite',
-      shift: 'General Shift',
-      status: 'Present',
-      attendanceRate: 98.1,
-      joiningDate: 'Sep 11, 2022',
-      initials: 'DC',
-      reportsTo: 'Aarav Sharma',
-    },
-    {
-      id: 'WF-05',
-      employeeId: 'EMP-3605',
-      name: 'Amara Okafor',
-      email: 'amara.okafor@ofc360.com',
-      phone: '+1 212 555 0194',
-      role: 'it_admin',
-      designation: 'Lead Security Engineer',
-      department: 'Engineering',
-      location: 'New York · Hybrid',
-      shift: 'General Shift',
-      status: 'On Leave',
-      attendanceRate: 97.5,
-      joiningDate: 'Feb 20, 2024',
-      initials: 'AO',
-      reportsTo: 'Elena Rostova',
-    },
-    {
-      id: 'WF-06',
-      employeeId: 'EMP-3614',
-      name: 'Rohan Deshmukh',
-      email: 'rohan.deshmukh@ofc360.com',
-      phone: '+91 98201 44510',
-      role: 'manager',
-      designation: 'Senior SRE Lead',
-      department: 'Engineering',
-      location: 'Bengaluru · Hybrid',
-      shift: 'Morning Shift',
-      status: 'Late',
-      attendanceRate: 96.4,
-      joiningDate: 'May 09, 2023',
-      initials: 'RD',
-      reportsTo: 'Elena Rostova',
-    },
-    {
-      id: 'WF-07',
-      employeeId: 'EMP-3619',
-      name: 'Ananya Krishnan',
-      email: 'ananya.krishnan@ofc360.com',
-      phone: '+91 98450 77812',
-      role: 'executive',
-      designation: 'VP Enterprise Sales',
-      department: 'Enterprise Sales',
-      location: 'Mumbai · Hybrid',
-      shift: 'Flexible Shift',
-      status: 'Present',
-      attendanceRate: 97.9,
-      joiningDate: 'Nov 02, 2022',
-      initials: 'AK',
-      reportsTo: 'Aarav Sharma',
-    },
-    {
-      id: 'WF-08',
-      employeeId: 'EMP-3622',
-      name: 'Vikramaditya Nair',
-      email: 'vikram.nair@ofc360.com',
-      phone: '+91 98112 33901',
-      role: 'manager',
-      designation: 'Global Support Lead',
-      department: 'Customer Success',
-      location: 'Bengaluru · Onsite',
-      shift: 'Night Shift',
-      status: 'Present',
-      attendanceRate: 98.2,
-      joiningDate: 'Aug 14, 2023',
-      initials: 'VN',
-      reportsTo: 'Aarav Sharma',
-    },
-  ];
+  const exits: UpcomingExit[] = [];
 
-  const notifications: HrNotificationItem[] = [
-    {
-      id: 'NTF-01',
-      title: '2 Leave Requests Awaiting Approval',
-      message: 'Sora Takahashi (5d Annual) and Elena Rostova (2d Study) submitted leave requests.',
-      category: 'Leave Approvals',
-      timestamp: '12m ago',
-      read: false,
-      actionTab: 'approvals',
-    },
-    {
-      id: 'NTF-02',
-      title: 'Shift Swap Request in Engineering',
-      message: 'Rohan Deshmukh requested a Thursday Night Shift swap with Kabir Mehta.',
-      category: 'Attendance Alerts',
-      timestamp: '42m ago',
-      read: false,
-      actionTab: 'attendance',
-    },
-    {
-      id: 'NTF-03',
-      title: 'November Payroll Pre-Audit Passed',
-      message: '348 active employees verified with 99.4% statutory tax compliance.',
-      category: 'Payroll Updates',
-      timestamp: '2h ago',
-      read: false,
-      actionTab: 'more',
-    },
-    {
-      id: 'NTF-04',
-      title: 'Offer Accepted: Staff AI Platform Engineer',
-      message: 'Neha Singhania accepted the offer and is scheduled to join Nov 09.',
-      category: 'Recruitment Updates',
-      timestamp: '5h ago',
-      read: true,
-      actionTab: 'workforce',
-    },
-    {
-      id: 'NTF-05',
-      title: 'Q4 360° Calibration Announcement Published',
-      message: 'Broadcast delivered to 348 employees across 6 departments.',
-      category: 'Company Announcements',
-      timestamp: '1d ago',
-      read: true,
-      actionTab: 'home',
-    },
-  ];
+  const workforce: WorkforceEmployee[] = [];
 
-  const requisitions: RecruitmentRequisition[] = [
-    {
-      id: 'REQ-401',
-      title: 'Staff Distributed Systems Engineer',
-      department: 'Engineering',
-      location: 'Bengaluru / Remote',
-      openings: 4,
-      candidatesInPipeline: 19,
-      stage: 'Technical Round',
-      priority: 'Critical',
-    },
-    {
-      id: 'REQ-402',
-      title: 'Senior Product Designer (Mobile)',
-      department: 'Product & Design',
-      location: 'Zurich / Hybrid',
-      openings: 2,
-      candidatesInPipeline: 11,
-      stage: 'Offer Extended',
-      priority: 'High',
-    },
-    {
-      id: 'REQ-403',
-      title: 'Enterprise Account Executive',
-      department: 'Enterprise Sales',
-      location: 'Singapore / London',
-      openings: 5,
-      candidatesInPipeline: 24,
-      stage: 'Sourcing',
-      priority: 'High',
-    },
-    {
-      id: 'REQ-404',
-      title: 'People Partner – EMEA',
-      department: 'People Operations',
-      location: 'London',
-      openings: 1,
-      candidatesInPipeline: 8,
-      stage: 'Technical Round',
-      priority: 'Standard',
-    },
-  ];
+  const notifications: HrNotificationItem[] = [];
+
+  const requisitions: RecruitmentRequisition[] = [];
 
   const approvalCounts = recomputeApprovalCounts(approvals);
 
@@ -1192,17 +964,17 @@ export function createInitialHrDashboardState(): HrDashboardDataState {
         newHiresThisMonth: 14,
       },
       attendance: {
-        ratePercentage: 95.4,
-        present: 322,
-        late: 10,
-        onLeave: 11,
-        absent: 5,
+        ratePercentage: 0,
+        present: 0,
+        late: 0,
+        onLeave: 0,
+        absent: 0,
       },
       approvals: approvalCounts,
       recruitment: {
-        openPositions: 12,
-        candidatesInPipeline: 62,
-        activeRequisitionsCount: 4,
+        openPositions: 0,
+        candidatesInPipeline: 0,
+        activeRequisitionsCount: 0,
       },
       payroll: {
         cycleName: 'November 2026 Cycle',
@@ -1217,6 +989,7 @@ export function createInitialHrDashboardState(): HrDashboardDataState {
     },
     approvals,
     departments,
+    faceAttendanceLogs: [],
     shifts,
     rosters,
     holidays,
@@ -1701,7 +1474,7 @@ export function getMoreModulesCatalog(
     {
       id: 'my_profile',
       title: 'My Profile',
-      subtitle: 'Personal & company CRUD records',
+      subtitle: 'HR profile information',
       category: 'Account & Administration',
       allowedRoles: ALL_ROLES,
     },

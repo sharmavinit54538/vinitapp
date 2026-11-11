@@ -2,12 +2,13 @@ import { configureStore, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { hrDashboardApi } from './hr-api';
 import { helpDeskApi } from './helpdesk-api';
 import { payrollAnalyticsApi } from './payroll-analytics-api';
-import { BottomNavTab, HomeInternalTab } from '@/lib/hr-dashboard-logic';
+import { BottomNavTab, HomeInternalTab, MoreModuleId } from '@/lib/hr-dashboard-logic';
 import { Ofc360Role } from '@/lib/auth-schemas';
 
 interface HrMobileUiState {
   activeBottomTab: BottomNavTab;
   activeHomeTab: HomeInternalTab;
+  activeSubModule: MoreModuleId | null;
   activeRole: Ofc360Role;
   isDarkMode: boolean;
   isAnnouncementSheetOpen: boolean;
@@ -21,6 +22,7 @@ interface HrMobileUiState {
 const initialState: HrMobileUiState = {
   activeBottomTab: 'home',
   activeHomeTab: 'overview',
+  activeSubModule: null,
   activeRole: 'hr_admin',
   isDarkMode: false,
   isAnnouncementSheetOpen: false,
@@ -40,6 +42,9 @@ export const hrMobileUiSlice = createSlice({
     },
     setHomeTab(state, action: PayloadAction<HomeInternalTab>) {
       state.activeHomeTab = action.payload;
+    },
+    setActiveSubModule(state, action: PayloadAction<MoreModuleId | null>) {
+      state.activeSubModule = action.payload;
     },
     setActiveRole(state, action: PayloadAction<Ofc360Role>) {
       state.activeRole = action.payload;
@@ -81,6 +86,7 @@ export const hrMobileUiSlice = createSlice({
 export const {
   setBottomTab,
   setHomeTab,
+  setActiveSubModule,
   setActiveRole,
   setDarkMode,
   setAnnouncementSheetOpen,
@@ -92,10 +98,15 @@ export const {
   clearToast,
 } = hrMobileUiSlice.actions;
 
+import departmentsReducer from '@/src/features/admin/departments/departmentsSlice';
+import employeesReducer from '@/src/features/admin/employees/employeesSlice';
+
 export const makeHrStore = () =>
   configureStore({
     reducer: {
       hrMobileUi: hrMobileUiSlice.reducer,
+      adminDepartments: departmentsReducer,
+      adminEmployees: employeesReducer,
       [hrDashboardApi.reducerPath]: hrDashboardApi.reducer,
       [helpDeskApi.reducerPath]: helpDeskApi.reducer,
       [payrollAnalyticsApi.reducerPath]: payrollAnalyticsApi.reducer,

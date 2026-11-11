@@ -8,6 +8,7 @@ import {
   AnnouncementItem,
   WorkforceEmployee,
   PayrollCycleSummary,
+  FaceAttendanceLogItem,
 } from '@/lib/hr-dashboard-logic';
 import { authClient, API_BASE_URL } from '@/lib/auth-api';
 
@@ -154,6 +155,7 @@ export const hrDashboardApi = createApi({
         email: string;
         phone: string;
         designation: string;
+        role?: string;
         department: string;
         location: string;
         shift: string;
@@ -189,6 +191,91 @@ export const hrDashboardApi = createApi({
       }),
       invalidatesTags: ['Dashboard', 'Payroll'],
     }),
+
+    updateAnnouncement: builder.mutation<
+      { message: string; announcements: AnnouncementItem[] },
+      {
+        id: string;
+        title?: string;
+        description?: string;
+        priority?: 'Urgent' | 'High' | 'Normal';
+        department?: string;
+        status?: 'Published' | 'Draft';
+      }
+    >({
+      query: (body) => ({
+        url: '/announcements/update',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Dashboard', 'Announcements'],
+    }),
+
+    deleteAnnouncement: builder.mutation<
+      { message: string; announcements: AnnouncementItem[] },
+      { id: string }
+    >({
+      query: (body) => ({
+        url: '/announcements/delete',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Dashboard', 'Announcements'],
+    }),
+
+    createRequisition: builder.mutation<
+      { message: string },
+      {
+        title: string;
+        department: string;
+        location?: string;
+        openings?: number;
+        priority?: 'Critical' | 'High' | 'Standard';
+      }
+    >({
+      query: (body) => ({
+        url: '/recruitment/create',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Dashboard'],
+    }),
+
+    advanceRequisitionStage: builder.mutation<
+      { message: string },
+      { id: string; stage: 'Sourcing' | 'Technical Round' | 'Offer Extended' }
+    >({
+      query: (body) => ({
+        url: '/recruitment/stage',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Dashboard'],
+    }),
+
+    recordFaceAttendance: builder.mutation<
+      {
+        message: string;
+        log: FaceAttendanceLogItem;
+        faceAttendanceLogs: FaceAttendanceLogItem[];
+      },
+      {
+        employeeName: string;
+        employeeId?: string;
+        department: string;
+        shift?: string;
+        punchType?: 'Check-In' | 'Late Check-In' | 'Check-Out';
+        location?: string;
+        snapshotDataUrl?: string;
+      }
+    >({
+      query: (body) => ({
+        url: '/attendance/face-checkin',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Dashboard', 'Workforce'],
+    }),
   }),
 });
 
@@ -203,4 +290,9 @@ export const {
   useAddWorkforceEmployeeMutation,
   useMarkNotificationsReadMutation,
   useTriggerPayrollRunMutation,
+  useUpdateAnnouncementMutation,
+  useDeleteAnnouncementMutation,
+  useCreateRequisitionMutation,
+  useAdvanceRequisitionStageMutation,
+  useRecordFaceAttendanceMutation,
 } = hrDashboardApi;

@@ -440,7 +440,8 @@ export function PayrollTrendsSection({ trends }: PayrollTrendsChartProps) {
           })}
         </svg>
       </div>
-    </section>
+    )}
+  </section>
   );
 }
 

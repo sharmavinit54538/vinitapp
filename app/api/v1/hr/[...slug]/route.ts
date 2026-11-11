@@ -8,18 +8,19 @@ import {
   HolidayItem,
   AnnouncementItem,
   WorkforceEmployee,
+  FaceAttendanceLogItem,
 } from '@/lib/hr-dashboard-logic';
 
 // Persistent server-side state across requests in the running container
 const globalForHr = globalThis as unknown as {
-  __ofc360HrState?: HrDashboardDataState;
+  __ofc360HrStateV4?: HrDashboardDataState;
 };
 
 function getHrState(): HrDashboardDataState {
-  if (!globalForHr.__ofc360HrState) {
-    globalForHr.__ofc360HrState = createInitialHrDashboardState();
+  if (!globalForHr.__ofc360HrStateV4) {
+    globalForHr.__ofc360HrStateV4 = createInitialHrDashboardState();
   }
-  return globalForHr.__ofc360HrState;
+  return globalForHr.__ofc360HrStateV4;
 }
 
 export async function GET(
@@ -48,6 +49,7 @@ export async function GET(
       return NextResponse.json({
         summary: state.kpis.attendance,
         departments: state.departments,
+        faceAttendanceLogs: state.faceAttendanceLogs || [],
       });
 
     case 'shifts':
@@ -302,6 +304,7 @@ export async function POST(
           ? `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
           : fullName.slice(0, 2).toUpperCase();
       const empId = `EMP-${3650 + state.workforce.length + 1}`;
+      const empRole = String(body.role || 'Employee').trim();
 
       const role = (body.role as any) || 'employee';
       const newEmp: WorkforceEmployee = {
@@ -315,6 +318,7 @@ export async function POST(
         phone: String(body.phone || '+91 98200 11223'),
         role,
         designation: String(body.designation || 'Senior Specialist'),
+        role: empRole,
         department: String(body.department || 'Engineering'),
         location: String(body.location || 'Bengaluru · Hybrid'),
         shift: String(body.shift || 'General Shift'),
@@ -330,7 +334,7 @@ export async function POST(
       state.kpis.attendance.present += 1;
 
       return NextResponse.json({
-        message: `${fullName} (${empId}) enrolled in OFC360 Workforce.`,
+        message: `${fullName} (${empId}) enrolled as ${empRole} in OFC360 Workforce.`,
         employee: newEmp,
         workforce: state.workforce,
       });
@@ -365,6 +369,190 @@ export async function POST(
       return NextResponse.json({
         message: `Payroll cycle (${state.kpis.payroll.cycleName}) status updated to ${state.kpis.payroll.status}.`,
         payroll: state.kpis.payroll,
+      });
+    }
+
+    case 'announcements/update': {
+      const id = String(body.id || '');
+      state.announcements = state.announcements.map((ann) =>
+        ann.id === id
+          ? {
+              ...ann,
+              title: body.title ? String(body.title) : ann.title,
+              description: body.description ? String(body.description) : ann.description,
+              priority: (body.priority as AnnouncementItem['priority']) || ann.priority,
+              department: body.department ? String(body.department) : ann.department,
+              status: body.status
+                ? (body.status as 'Published' | 'Draft')
+                : ann.status === 'Published'
+                ? 'Draft'
+                : 'Published',
+            }
+          : ann
+      );
+      return NextResponse.json({
+        message: `Announcement ${id} updated.`,
+        announcements: state.announcements,
+      });
+    }
+
+    case 'announcements/delete': {
+      const id = String(body.id || '');
+      state.announcements = state.announcements.filter((ann) => ann.id !== id);
+      return NextResponse.json({
+        message: `Announcement ${id} deleted.`,
+        announcements: state.announcements,
+      });
+    }
+
+    case 'recruitment/create': {
+      const openings = Math.max(1, Number(body.openings) || 1);
+      const newReq = {
+        id: `REQ-${200 + state.requisitions.length + 1}`,
+        title: String(body.title || 'Senior Software Engineer'),
+        department: String(body.department || 'Engineering'),
+        location: String(body.location || 'Bengaluru · Hybrid'),
+        openings,
+        candidatesInPipeline: Number(body.candidatesInPipeline) || 4,
+        stage: (body.stage as 'Sourcing' | 'Technical Round' | 'Offer Extended') || 'Sourcing',
+        priority: (body.priority as 'Critical' | 'High' | 'Standard') || 'High',
+      };
+      state.requisitions = [newReq, ...state.requisitions];
+      state.kpis.recruitment.openPositions += openings;
+      state.kpis.recruitment.activeRequisitionsCount = state.requisitions.length;
+      state.kpis.recruitment.candidatesInPipeline += newReq.candidatesInPipeline;
+      return NextResponse.json({
+        message: `Job requisition "${newReq.title}" (${newReq.id}) published.`,
+        requisitions: state.requisitions,
+        recruitmentKpis: state.kpis.recruitment,
+      });
+    }
+
+    case 'recruitment/stage': {
+      const id = String(body.id || '');
+      const nextStage = (body.stage as 'Sourcing' | 'Technical Round' | 'Offer Extended') || 'Technical Round';
+      state.requisitions = state.requisitions.map((r) =>
+        r.id === id ? { ...r, stage: nextStage } : r
+      );
+      return NextResponse.json({
+        message: `Requisition ${id} moved to ${nextStage}.`,
+        requisitions: state.requisitions,
+      });
+    }
+
+    case 'attendance/face-checkin': {
+      const empName = String(body.employeeName || '').trim() || 'Employee';
+      const parts = empName.split(/\s+/);
+      const initials =
+        parts.length >= 2
+          ? `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
+          : empName.slice(0, 2).toUpperCase();
+      const currentLogs = state.faceAttendanceLogs || [];
+      const empId =
+        String(body.employeeId || '').trim() ||
+        `EMP-${3600 + currentLogs.length + 1}`;
+      const deptName = String(body.department || '').trim() || 'General';
+      const shiftName = String(body.shift || '').trim() || 'General Shift';
+      const punchType =
+        body.punchType === 'Late Check-In' || body.punchType === 'Check-Out'
+          ? body.punchType
+          : 'Check-In';
+      const location =
+        String(body.location || '').trim() || 'GPS Verified · Office Hub';
+      const nowTime = new Date().toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      });
+
+      const newLog: FaceAttendanceLogItem = {
+        id: `FACE-${100 + currentLogs.length + 1}`,
+        employeeId: empId,
+        employeeName: empName,
+        department: deptName,
+        shift: shiftName,
+        punchType,
+        timestamp: nowTime,
+        location,
+        confidenceScore: 99.4,
+        livenessVerified: true,
+        initials,
+        snapshotDataUrl:
+          typeof body.snapshotDataUrl === 'string'
+            ? body.snapshotDataUrl
+            : undefined,
+      };
+
+      state.faceAttendanceLogs = [newLog, ...currentLogs];
+
+      if (punchType === 'Check-In') {
+        state.kpis.attendance.present += 1;
+      } else if (punchType === 'Late Check-In') {
+        state.kpis.attendance.late += 1;
+      }
+
+      const totalRecorded =
+        state.kpis.attendance.present +
+        state.kpis.attendance.late +
+        state.kpis.attendance.onLeave +
+        state.kpis.attendance.absent;
+      state.kpis.attendance.ratePercentage =
+        totalRecorded > 0
+          ? Number(
+              (
+                ((state.kpis.attendance.present + state.kpis.attendance.late) /
+                  totalRecorded) *
+                100
+              ).toFixed(1)
+            )
+          : 0;
+
+      // Update or create department attendance breakdown record
+      const existingDeptIdx = state.departments.findIndex(
+        (d) => d.department.toLowerCase() === deptName.toLowerCase()
+      );
+      if (existingDeptIdx >= 0) {
+        const d = state.departments[existingDeptIdx];
+        const nextPresent =
+          punchType === 'Check-In' ? d.presentCount + 1 : d.presentCount;
+        const nextLate =
+          punchType === 'Late Check-In' ? d.lateCount + 1 : d.lateCount;
+        const nextTotal = Math.max(
+          d.totalEmployees,
+          nextPresent + nextLate + d.onLeaveCount + d.absentCount
+        );
+        const nextPct =
+          nextTotal > 0
+            ? Number((((nextPresent + nextLate) / nextTotal) * 100).toFixed(1))
+            : 100;
+        state.departments[existingDeptIdx] = {
+          ...d,
+          totalEmployees: nextTotal,
+          presentCount: nextPresent,
+          lateCount: nextLate,
+          attendancePercentage: nextPct,
+        };
+      } else if (punchType !== 'Check-Out') {
+        state.departments = [
+          ...state.departments,
+          {
+            id: `DEPT-${String(state.departments.length + 1).padStart(2, '0')}`,
+            department: deptName,
+            totalEmployees: 1,
+            presentCount: punchType === 'Check-In' ? 1 : 0,
+            lateCount: punchType === 'Late Check-In' ? 1 : 0,
+            onLeaveCount: 0,
+            absentCount: 0,
+            attendancePercentage: 100,
+            headOfDept: empName,
+          },
+        ];
+      }
+
+      return NextResponse.json({
+        message: `Face attendance (${punchType}) verified for ${empName} (${empId}).`,
+        log: newLog,
+        faceAttendanceLogs: state.faceAttendanceLogs,
       });
     }
 

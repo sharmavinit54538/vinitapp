@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "OFC360 HRMS Mobile",
+    "slug": "ofc360-hrms-mobile",
+    "version": "2.4.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "scheme": "ofc360",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ofc360.hrms",
+      "infoPlist": {
+        "NSCameraUsageDescription": "OFC360 requires camera access for AI Face Attendance Check-In and liveness verification.",
+        "NSFaceIDUsageDescription": "OFC360 uses Face ID for secure HR Admin authentication."
+      }
+    },
+    "android": {
+      "package": "com.ofc360.hrms",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
+    },
+    "plugins": [
+      "expo-router"
+    ]
+  }
+}

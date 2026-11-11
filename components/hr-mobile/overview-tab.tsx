@@ -7,6 +7,7 @@ import {
   ApprovalItem,
   BottomNavTab,
   HomeInternalTab,
+  MoreModuleId,
   calculateAttendancePercentages,
   filterApprovals,
 } from '@/lib/hr-dashboard-logic';
@@ -24,13 +25,16 @@ import {
   Megaphone,
   Play,
   CheckCircle2,
-  CalendarPlus,
+  Calendar,
   Check,
   X,
-  ChevronRight,
-  TrendingUp,
+  Sparkles,
   BarChart3,
   ArrowUpRight,
+  Zap,
+  MoreVertical,
+  Bell,
+  Gift,
 } from 'lucide-react';
 
 interface OverviewTabProps {
@@ -38,6 +42,7 @@ interface OverviewTabProps {
   canEdit: boolean;
   onNavigateBottomTab: (tab: BottomNavTab) => void;
   onNavigateHomeTab: (tab: HomeInternalTab) => void;
+  onOpenSubModule?: (modId: MoreModuleId) => void;
   onOpenAddEmployee: () => void;
   onOpenAnnouncement: () => void;
   onSuccessToast: (msg: string) => void;
@@ -48,6 +53,7 @@ export function OverviewTab({
   canEdit,
   onNavigateBottomTab,
   onNavigateHomeTab,
+  onOpenSubModule,
   onOpenAddEmployee,
   onOpenAnnouncement,
   onSuccessToast,
@@ -68,6 +74,60 @@ export function OverviewTab({
   const [activeChartMetric, setActiveChartMetric] = useState<
     'workforce' | 'attendance' | 'payroll' | 'recruitment'
   >('workforce');
+  const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(false);
+  const quickActionsRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        quickActionsRef.current &&
+        !quickActionsRef.current.contains(event.target as Node)
+      ) {
+        setIsQuickActionsOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsQuickActionsOpen(false);
+      }
+    };
+    if (isQuickActionsOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isQuickActionsOpen]);
+
+  const [isApprovalsMenuOpen, setIsApprovalsMenuOpen] = useState(false);
+  const approvalsMenuRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        approvalsMenuRef.current &&
+        !approvalsMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsApprovalsMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsApprovalsMenuOpen(false);
+      }
+    };
+    if (isApprovalsMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isApprovalsMenuOpen]);
+
   const [selectedPointIndex, setSelectedPointIndex] = useState<number>(5);
 
   const [decideApproval, { isLoading: isDeciding }] =
@@ -230,7 +290,11 @@ export function OverviewTab({
           {/* KPI 4: Open Requisitions / Active Hiring */}
           <button
             type="button"
-            onClick={() => onNavigateBottomTab('more')}
+            onClick={() =>
+              onOpenSubModule
+                ? onOpenSubModule('recruitment')
+                : onNavigateBottomTab('more')
+            }
             data-testid="kpi-card-recruitment"
             className="min-w-[235px] lg:min-w-0 snap-start text-left rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 hover:border-indigo-500/60 transition-all flex flex-col justify-between gap-3 cursor-pointer shrink-0"
           >
@@ -261,7 +325,11 @@ export function OverviewTab({
           {/* KPI 5: Payroll Status */}
           <button
             type="button"
-            onClick={() => onNavigateBottomTab('more')}
+            onClick={() =>
+              onOpenSubModule
+                ? onOpenSubModule('payroll')
+                : onNavigateBottomTab('more')
+            }
             data-testid="kpi-card-payroll"
             className="min-w-[235px] lg:min-w-0 snap-start text-left rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 hover:border-indigo-500/60 transition-all flex flex-col justify-between gap-3 cursor-pointer shrink-0"
           >
@@ -285,68 +353,229 @@ export function OverviewTab({
             </div>
           </button>
         </div>
+
+        {/* Supplemental KPI Strip: New Joiners, Employees on Leave, Upcoming Birthdays & Celebrations */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+          <button
+            type="button"
+            onClick={() =>
+              onOpenSubModule
+                ? onOpenSubModule('onboarding')
+                : onNavigateBottomTab('more')
+            }
+            data-testid="kpi-card-new-joiners"
+            className="text-left rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3 hover:border-indigo-500/60 transition-all flex items-center justify-between gap-3 cursor-pointer"
+          >
+            <div>
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block">
+                New Joiners (This Month)
+              </span>
+              <div className="flex items-baseline gap-2 mt-0.5">
+                <span className="text-lg font-bold font-mono tabular-nums text-slate-900 dark:text-white">
+                  {data.kpis.workforce.newHiresThisMonth}
+                </span>
+                <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                  {data.joiners.length} In Onboarding
+                </span>
+              </div>
+            </div>
+            <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+              <UserPlus className="w-4 h-4" />
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onNavigateBottomTab('attendance')}
+            data-testid="kpi-card-on-leave"
+            className="text-left rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3 hover:border-indigo-500/60 transition-all flex items-center justify-between gap-3 cursor-pointer"
+          >
+            <div>
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block">
+                Employees on Leave Today
+              </span>
+              <div className="flex items-baseline gap-2 mt-0.5">
+                <span className="text-lg font-bold font-mono tabular-nums text-slate-900 dark:text-white">
+                  {data.kpis.attendance.onLeave}
+                </span>
+                <span className="text-xs text-indigo-600 dark:text-indigo-400 font-mono">
+                  {data.kpis.approvals.leaveRequests} Pending Requests
+                </span>
+              </div>
+            </div>
+            <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+              <Calendar className="w-4 h-4" />
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onNavigateHomeTab('holidays')}
+            data-testid="kpi-card-birthdays-holidays"
+            className="text-left rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3 hover:border-indigo-500/60 transition-all flex items-center justify-between gap-3 cursor-pointer"
+          >
+            <div>
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block">
+                Upcoming Birthdays &amp; Holidays
+              </span>
+              <div className="flex items-baseline gap-2 mt-0.5">
+                <span className="text-lg font-bold font-mono tabular-nums text-slate-900 dark:text-white">
+                  {data.holidays.length + 3}
+                </span>
+                <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                  3 Birthdays · {data.holidays.length} Holidays
+                </span>
+              </div>
+            </div>
+            <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+              <Gift className="w-4 h-4" />
+            </div>
+          </button>
+        </div>
       </section>
 
-      {/* B. HORIZONTAL SCROLLABLE QUICK ACTIONS */}
-      <section aria-label="Quick Actions">
+      {/* B. QUICK ACTIONS POPUP TRIGGER & 2x2 PANEL */}
+      <section aria-label="Quick Actions" className="relative z-30" ref={quickActionsRef}>
         <div className="flex items-center justify-between mb-2.5">
-          <h2 className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-            Quick Actions
-          </h2>
-        </div>
-
-        <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar pb-1">
+          <div className="flex items-center gap-2">
+            <h2 className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+              Quick Actions
+            </h2>
+          </div>
           <button
             type="button"
-            onClick={onOpenAddEmployee}
-            data-testid="quick-action-add-employee"
-            className="min-h-[46px] px-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-indigo-500 text-xs font-semibold text-slate-800 dark:text-slate-100 inline-flex items-center gap-2 shrink-0 shadow-2xs transition-all cursor-pointer"
+            onClick={() => setIsQuickActionsOpen((prev) => !prev)}
+            aria-expanded={isQuickActionsOpen}
+            aria-label="Toggle Quick Actions menu"
+            data-testid="quick-actions-trigger"
+            className="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center shadow-2xs transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            title="Quick Actions Menu"
           >
-            <UserPlus className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-            <span>Add Employee</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={onOpenAnnouncement}
-            data-testid="quick-action-post-announcement"
-            className="min-h-[46px] px-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-indigo-500 text-xs font-semibold text-slate-800 dark:text-slate-100 inline-flex items-center gap-2 shrink-0 shadow-2xs transition-all cursor-pointer"
-          >
-            <Megaphone className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-            <span>Post Announcement</span>
-          </button>
-
-          <button
-            type="button"
-            disabled={isRunningPayroll || !canEdit}
-            onClick={handleQuickRunPayroll}
-            data-testid="quick-action-run-payroll"
-            className="min-h-[46px] px-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-indigo-500 text-xs font-semibold text-slate-800 dark:text-slate-100 inline-flex items-center gap-2 shrink-0 shadow-2xs transition-all disabled:opacity-50 cursor-pointer"
-          >
-            <Play className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <span>{isRunningPayroll ? 'Running...' : 'Run Payroll'}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onNavigateBottomTab('approvals')}
-            data-testid="quick-action-approve-leaves"
-            className="min-h-[46px] px-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-indigo-500 text-xs font-semibold text-slate-800 dark:text-slate-100 inline-flex items-center gap-2 shrink-0 shadow-2xs transition-all cursor-pointer"
-          >
-            <CheckCircle2 className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-            <span>Approve Leaves</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onNavigateHomeTab('shifts')}
-            data-testid="quick-action-create-shift"
-            className="min-h-[46px] px-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-indigo-500 text-xs font-semibold text-slate-800 dark:text-slate-100 inline-flex items-center gap-2 shrink-0 shadow-2xs transition-all cursor-pointer"
-          >
-            <CalendarPlus className="w-4 h-4 text-sky-600 dark:text-sky-400" />
-            <span>Create Shift</span>
+            <MoreVertical className="w-4 h-4" />
           </button>
         </div>
+
+        {/* ELEGANT QUICK ACTIONS POPUP (2x2 Grid) */}
+        {isQuickActionsOpen && (
+          <div
+            data-testid="quick-actions-popup"
+            className="absolute right-0 top-11 z-50 w-full sm:w-[420px] rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xl transition-all duration-200 animate-in fade-in zoom-in-95"
+          >
+            <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-lg bg-amber-50 dark:bg-amber-950/60 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                  <Zap className="w-3.5 h-3.5 fill-amber-500" />
+                </div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">
+                  Quick Actions
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsQuickActionsOpen(false)}
+                className="w-6 h-6 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 flex items-center justify-center cursor-pointer"
+                aria-label="Close Quick Actions"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              {/* Card 1: Add Employee */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsQuickActionsOpen(false);
+                  onOpenAddEmployee();
+                }}
+                data-testid="quick-action-add-employee"
+                className="p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 hover:bg-indigo-50/60 dark:hover:bg-indigo-950/40 hover:border-indigo-200 dark:hover:border-indigo-800/80 text-left flex flex-col justify-between gap-2.5 group transition-all cursor-pointer"
+              >
+                <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                  <UserPlus className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-slate-900 dark:text-white block group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                    Add Employee
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5">
+                    Onboard new staff
+                  </span>
+                </div>
+              </button>
+
+              {/* Card 2: Post Announcement */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsQuickActionsOpen(false);
+                  onOpenAnnouncement();
+                }}
+                data-testid="quick-action-post-announcement"
+                className="p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 hover:bg-indigo-50/60 dark:hover:bg-indigo-950/40 hover:border-indigo-200 dark:hover:border-indigo-800/80 text-left flex flex-col justify-between gap-2.5 group transition-all cursor-pointer"
+              >
+                <div className="w-8 h-8 rounded-lg bg-violet-100 dark:bg-violet-950 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                  <Megaphone className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-slate-900 dark:text-white block group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                    Post Announcement
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5">
+                    Broadcast company news
+                  </span>
+                </div>
+              </button>
+
+              {/* Card 3: Run Payroll */}
+              <button
+                type="button"
+                disabled={isRunningPayroll || !canEdit}
+                onClick={() => {
+                  setIsQuickActionsOpen(false);
+                  handleQuickRunPayroll();
+                }}
+                data-testid="quick-action-run-payroll"
+                className="p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 hover:bg-emerald-50/60 dark:hover:bg-emerald-950/40 hover:border-emerald-200 dark:hover:border-emerald-800/80 text-left flex flex-col justify-between gap-2.5 group transition-all disabled:opacity-50 cursor-pointer"
+              >
+                <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                  <Play className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-slate-900 dark:text-white block group-hover:text-emerald-600 dark:group-hover:text-emerald-400">
+                    {isRunningPayroll ? 'Running...' : 'Run Payroll'}
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5">
+                    Execute cycle payout
+                  </span>
+                </div>
+              </button>
+
+              {/* Card 4: Approve Leaves */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsQuickActionsOpen(false);
+                  onNavigateBottomTab('approvals');
+                }}
+                data-testid="quick-action-approve-leaves"
+                className="p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 hover:bg-amber-50/60 dark:hover:bg-amber-950/40 hover:border-amber-200 dark:hover:border-amber-800/80 text-left flex flex-col justify-between gap-2.5 group transition-all cursor-pointer"
+              >
+                <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                  <CheckCircle2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-slate-900 dark:text-white block group-hover:text-amber-600 dark:group-hover:text-amber-400">
+                    Approve Leaves
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5">
+                    Review pending queue
+                  </span>
+                </div>
+              </button>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* MAIN TWO-COLUMN MOBILE-FIRST GRID (Stacks on Phone, 12-Col on Tablet/Desktop) */}
@@ -358,7 +587,7 @@ export function OverviewTab({
             aria-label="Pending Approvals"
             className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-5 space-y-4"
           >
-            <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center justify-between gap-2 relative" ref={approvalsMenuRef}>
               <div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">
                   Pending Approvals Queue
@@ -367,39 +596,164 @@ export function OverviewTab({
                   Leave requests, attendance regularizations, and expense claims
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => onNavigateBottomTab('approvals')}
-                className="min-h-[38px] px-3 rounded-xl text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 inline-flex items-center gap-1 cursor-pointer"
-              >
-                View All ({data.kpis.approvals.totalPending})
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
 
-            {/* Category Segmented Filter */}
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
-              {(
-                [
-                  'All',
-                  'Leave Requests',
-                  'Attendance Regularizations',
-                  'Expense Claims',
-                ] as const
-              ).map((cat) => (
+              <div className="flex items-center gap-2">
                 <button
-                  key={cat}
                   type="button"
-                  onClick={() => setApprovalCategory(cat)}
-                  className={`min-h-[36px] px-3 rounded-xl text-xs font-semibold whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
-                    approvalCategory === cat
-                      ? 'bg-slate-900 text-white dark:bg-indigo-600'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900'
-                  }`}
+                  onClick={() => setIsApprovalsMenuOpen((prev) => !prev)}
+                  aria-expanded={isApprovalsMenuOpen}
+                  aria-label="Toggle Pending Approvals menu"
+                  data-testid="approvals-menu-trigger"
+                  className="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center shadow-2xs transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  title="Approvals Options"
                 >
-                  {cat}
+                  <MoreVertical className="w-4 h-4" />
                 </button>
-              ))}
+              </div>
+
+              {/* PENDING APPROVALS POPUP PANEL */}
+              {isApprovalsMenuOpen && (
+                <div
+                  data-testid="approvals-menu-popup"
+                  className="absolute right-0 top-11 z-50 w-full sm:w-[360px] rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-xl transition-all duration-200 animate-in fade-in zoom-in-95"
+                >
+                  <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                      </div>
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">
+                        Approvals Queue Options
+                      </h4>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsApprovalsMenuOpen(false)}
+                      className="w-6 h-6 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 flex items-center justify-center cursor-pointer"
+                      aria-label="Close menu"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {/* Option 1: View All Approvals */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsApprovalsMenuOpen(false);
+                        onNavigateBottomTab('approvals');
+                      }}
+                      data-testid="approvals-menu-view-all"
+                      className="p-3 rounded-xl border border-indigo-100 dark:border-indigo-950/70 bg-indigo-50/50 dark:bg-indigo-950/30 hover:bg-indigo-100/60 text-left flex flex-col justify-between gap-2 group transition-all cursor-pointer col-span-2"
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                          <span className="text-xs font-bold text-slate-900 dark:text-white">
+                            View All Approvals
+                          </span>
+                        </div>
+                        <span className="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                          {data.kpis.approvals.totalPending} Pending
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Open full authorization center &rarr;
+                      </span>
+                    </button>
+
+                    {/* Option 2: Filter Leave Requests */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsApprovalsMenuOpen(false);
+                        setApprovalCategory('Leave Requests');
+                      }}
+                      className={`p-3 rounded-xl border text-left flex flex-col justify-between gap-1.5 transition-all cursor-pointer ${
+                        approvalCategory === 'Leave Requests'
+                          ? 'border-indigo-600 bg-indigo-50/40 dark:bg-indigo-950/40'
+                          : 'border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 hover:bg-slate-100'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                        <span className="text-xs font-bold text-slate-900 dark:text-white">
+                          Leaves
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Time-off requests
+                      </span>
+                    </button>
+
+                    {/* Option 3: Filter Attendance Regularizations */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsApprovalsMenuOpen(false);
+                        setApprovalCategory('Attendance Regularizations');
+                      }}
+                      className={`p-3 rounded-xl border text-left flex flex-col justify-between gap-1.5 transition-all cursor-pointer ${
+                        approvalCategory === 'Attendance Regularizations'
+                          ? 'border-indigo-600 bg-indigo-50/40 dark:bg-indigo-950/40'
+                          : 'border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 hover:bg-slate-100'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <UserCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                        <span className="text-xs font-bold text-slate-900 dark:text-white">
+                          Attendance
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Punctuality &amp; logs
+                      </span>
+                    </button>
+
+                    {/* Option 4: Filter Expense Claims */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsApprovalsMenuOpen(false);
+                        setApprovalCategory('Expense Claims');
+                      }}
+                      className={`p-3 rounded-xl border text-left flex flex-col justify-between gap-1.5 transition-all cursor-pointer ${
+                        approvalCategory === 'Expense Claims'
+                          ? 'border-indigo-600 bg-indigo-50/40 dark:bg-indigo-950/40'
+                          : 'border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 hover:bg-slate-100'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <Wallet className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                        <span className="text-xs font-bold text-slate-900 dark:text-white">
+                          Expenses
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Claims &amp; receipts
+                      </span>
+                    </button>
+
+                    {/* Option 5: Reset Filter to All */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsApprovalsMenuOpen(false);
+                        setApprovalCategory('All');
+                      }}
+                      className="p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 hover:bg-slate-100 text-left flex items-center justify-between gap-2 transition-all cursor-pointer col-span-2"
+                    >
+                      <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        Show All Categories
+                      </span>
+                      <span className="text-[11px] font-mono text-slate-400">
+                        Reset Filter
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Approval Items List */}
@@ -641,9 +995,73 @@ export function OverviewTab({
               )}
             </div>
           </section>
+
+          {/* H. RECENT HR ACTIVITIES & NOTIFICATIONS */}
+          <section
+            aria-label="Recent Activities and HR Notifications"
+            data-testid="overview-recent-activities"
+            className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-5 space-y-3.5"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Bell className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    Recent Activities &amp; HR Notifications
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Real-time audit stream across approvals, payroll, and onboarding
+                  </p>
+                </div>
+              </div>
+              <span className="text-xs font-mono text-indigo-600 dark:text-indigo-400">
+                {data.notifications.filter((n) => !n.read).length} Unread
+              </span>
+            </div>
+
+            {data.notifications.length === 0 ? (
+              <p className="text-xs text-slate-500 py-4 text-center">
+                No recent notifications or activities recorded.
+              </p>
+            ) : (
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                {data.notifications.slice(0, 4).map((notif) => (
+                  <div
+                    key={notif.id}
+                    className="py-3 first:pt-1 last:pb-0 flex items-start justify-between gap-3 text-xs"
+                  >
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-2 text-[11px] text-slate-500">
+                        <span className="font-semibold text-indigo-600 dark:text-indigo-400">
+                          {notif.category}
+                        </span>
+                        <span>·</span>
+                        <span className="font-mono">{notif.timestamp}</span>
+                      </div>
+                      <p className="text-sm font-bold text-slate-900 dark:text-white">
+                        {notif.title}
+                      </p>
+                      <p className="text-xs text-slate-600 dark:text-slate-300">
+                        {notif.message}
+                      </p>
+                    </div>
+                    {notif.actionTab && (
+                      <button
+                        type="button"
+                        onClick={() => onNavigateBottomTab(notif.actionTab!)}
+                        className="min-h-[32px] px-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-xs font-semibold text-slate-700 dark:text-slate-200 shrink-0 cursor-pointer"
+                      >
+                        Open
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
         </div>
 
-        {/* Right Column (5 cols): D. Attendance Snapshot + E. Department Snapshot + Section 10: Mobile Analytics */}
+        {/* Right Column (5 cols): D. Attendance Snapshot + E. Department Snapshot + Section 10: Mobile Analytics + AI Insights + Holidays */}
         <div className="lg:col-span-5 space-y-6">
           {/* D. ATTENDANCE SNAPSHOT (Compact Donut Chart + Percentage Indicators) */}
           <section
@@ -779,40 +1197,46 @@ export function OverviewTab({
                   Department Snapshot
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Headcount &amp; daily attendance across 6 units
+                  Headcount &amp; daily attendance across {data.departments.length} units
                 </p>
               </div>
             </div>
 
             <div className="space-y-2.5">
-              {data.departments.map((dept) => (
-                <div
-                  key={dept.id}
-                  className="p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/40 space-y-2"
-                >
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-slate-900 dark:text-white">
-                      {dept.department}
-                    </span>
-                    <span className="font-mono font-semibold text-indigo-600 dark:text-indigo-400 tabular-nums">
-                      {dept.attendancePercentage}%
-                    </span>
-                  </div>
-                  <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
-                    <div
-                      className="h-full bg-indigo-600 dark:bg-indigo-500 rounded-full"
-                      style={{ width: `${dept.attendancePercentage}%` }}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-mono tabular-nums">
-                    <span>Total: {dept.totalEmployees}</span>
-                    <span>
-                      Present: {dept.presentCount} · Leave: {dept.onLeaveCount} ·
-                      Absent: {dept.absentCount}
-                    </span>
-                  </div>
+              {data.departments.length === 0 ? (
+                <div className="p-5 rounded-xl border border-slate-100 dark:border-slate-800 text-center text-xs text-slate-500">
+                  No department attendance records available today.
                 </div>
-              ))}
+              ) : (
+                data.departments.map((dept) => (
+                  <div
+                    key={dept.id}
+                    className="p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/40 space-y-2"
+                  >
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-slate-900 dark:text-white">
+                        {dept.department}
+                      </span>
+                      <span className="font-mono font-semibold text-indigo-600 dark:text-indigo-400 tabular-nums">
+                        {dept.attendancePercentage}%
+                      </span>
+                    </div>
+                    <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                      <div
+                        className="h-full bg-indigo-600 dark:bg-indigo-500 rounded-full"
+                        style={{ width: `${dept.attendancePercentage}%` }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-mono tabular-nums">
+                      <span>Total: {dept.totalEmployees}</span>
+                      <span>
+                        Present: {dept.presentCount} · Leave: {dept.onLeaveCount} ·
+                        Absent: {dept.absentCount}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </section>
 
@@ -952,6 +1376,100 @@ export function OverviewTab({
                 );
               })}
             </div>
+          </section>
+
+          {/* I. AI WORKFORCE INSIGHTS */}
+          <section
+            aria-label="AI Workforce Insights"
+            data-testid="overview-ai-insights"
+            className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-5 space-y-3"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  AI Workforce Insights
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  onOpenSubModule
+                    ? onOpenSubModule('people_ai')
+                    : onNavigateBottomTab('more')
+                }
+                className="text-xs font-semibold text-violet-600 dark:text-violet-400 hover:underline cursor-pointer"
+              >
+                Open People AI &rarr;
+              </button>
+            </div>
+            <div className="space-y-2 text-xs">
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800">
+                <p className="font-bold text-slate-900 dark:text-white">
+                  Retention &amp; Attrition Signal (97.8% Stability)
+                </p>
+                <p className="text-slate-600 dark:text-slate-300 mt-0.5">
+                  Engineering &amp; Product units maintain low attrition risk. 2 active offboarding clearances are on track for timely handover.
+                </p>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800">
+                <p className="font-bold text-slate-900 dark:text-white">
+                  Shift &amp; Attendance Optimization
+                </p>
+                <p className="text-slate-600 dark:text-slate-300 mt-0.5">
+                  {data.kpis.attendance.ratePercentage}% daily attendance across {data.kpis.workforce.totalActive} active employees. Recommend approving {data.kpis.approvals.attendanceRegularizations} pending attendance regularizations before payroll lock.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* J. UPCOMING HOLIDAYS & EVENTS */}
+          <section
+            aria-label="Upcoming Holidays and Events"
+            data-testid="overview-upcoming-holidays"
+            className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-5 space-y-3"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  Upcoming Holidays &amp; Events
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => onNavigateHomeTab('holidays')}
+                className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+              >
+                Full Calendar &rarr;
+              </button>
+            </div>
+            {data.holidays.length === 0 ? (
+              <p className="text-xs text-slate-500 py-3 text-center">
+                No upcoming holidays configured.
+              </p>
+            ) : (
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                {data.holidays.slice(0, 3).map((hol) => (
+                  <div
+                    key={hol.id}
+                    className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-2 text-xs"
+                  >
+                    <div>
+                      <p className="font-bold text-slate-900 dark:text-white">
+                        {hol.name}
+                      </p>
+                      <p className="text-[11px] text-slate-500">
+                        {hol.category} · {hol.dayOfWeek} · {hol.location}
+                      </p>
+                    </div>
+                    <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">
+                      {hol.displayDate}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
         </div>
       </div>

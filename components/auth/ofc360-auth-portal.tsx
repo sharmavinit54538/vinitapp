@@ -109,10 +109,23 @@ export function Ofc360AuthPortal({
     }
   };
 
+  const handlePortalLogout = () => {
+    authClient.clearSession();
+    void authClient.logout();
+    setShowMobileDashboard(false);
+    setCurrentUser(null);
+    setSessionBanner(null);
+    setAuthView('login');
+    if (typeof window !== 'undefined') {
+      window.history.pushState(null, '', '/login');
+    }
+  };
+
   if (initialSection === 'roles' || showMobileDashboard) {
     return (
       <HrMobileAppShell
         initialRole={currentUser?.role || initialRolePreview}
+        onLogout={handlePortalLogout}
       />
     );
   }
@@ -135,12 +148,7 @@ export function Ofc360AuthPortal({
                 setAuthView('change-password');
               }}
               secondaryActionLabel="Sign Out"
-              onSecondaryAction={async () => {
-                await authClient.logout();
-                setCurrentUser(null);
-                setSessionBanner(null);
-                setAuthView('login');
-              }}
+              onSecondaryAction={handlePortalLogout}
             />
           )}
 
