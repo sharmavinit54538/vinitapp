@@ -10,7 +10,7 @@ export default function PayrollIndexPage() {
 
   return (
     <Provider store={store}>
-      <PayrollWorkspaceShell initialModule="dashboard" startInDirectory={false} />
+      <PayrollWorkspaceShell initialModule="dashboard" startInDirectory={true} />
     </Provider>
   );
 }

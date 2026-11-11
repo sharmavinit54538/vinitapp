@@ -10,7 +10,7 @@ export default function RecruitmentIndexPage() {
 
   return (
     <Provider store={store}>
-      <RecruitmentWorkspaceShell initialModule="dashboard" startInDirectory={false} />
+      <RecruitmentWorkspaceShell initialModule="dashboard" startInDirectory={true} />
     </Provider>
   );
 }

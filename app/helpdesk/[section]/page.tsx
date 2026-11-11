@@ -26,5 +26,5 @@ export default async function HelpDeskSectionPage({
 }) {
   const resolved = await params;
   const navId: HelpDeskNavId = SECTION_MAP[resolved.section] || 'overview';
-  return <HelpDeskApp initialNavId={navId} />;
+  return <HelpDeskApp initialNavId={navId} startInDirectory={false} />;
 }

@@ -84,6 +84,17 @@ export function RootNavigator() {
 
   const [isQuickSheetOpen, setIsQuickSheetOpen] = useState(false);
 
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      if (tabParam === 'more') {
+        dispatch(setBottomTab('more'));
+        dispatch(setActiveSubModule(null));
+      }
+    }
+  }, [dispatch]);
+
   const pendingApprovalsCount = dashboardData.approvals.filter(
     (a) => a.status === 'Pending'
   ).length;

@@ -23,6 +23,8 @@ import { AssetWorkspaceShell } from '../components/assets/AssetWorkspaceShell';
 import { HolidayWorkspaceShell } from '../components/holidays/HolidayWorkspaceShell';
 import { VisitorWorkspaceShell } from '../components/visitors/VisitorWorkspaceShell';
 import { AttendanceAnalyticsWorkspaceShell } from '../components/attendance-analytics/AttendanceAnalyticsWorkspaceShell';
+import { SettingsWorkspaceShell } from '../components/settings/SettingsWorkspaceShell';
+import { HelpDeskApp } from '@/components/helpdesk/helpdesk-app';
 
 interface MoreModulesScreenProps {
   data: HrDashboardDataState;
@@ -37,16 +39,7 @@ interface MoreModulesScreenProps {
 }
 
 const DIRECT_MODULE_ROUTES: Partial<Record<MoreModuleId, string>> = {
-  payroll: '/payroll',
-  payroll_analytics: '/payroll-analytics',
-  recruitment: '/recruitment',
-  onboarding: '/onboarding',
-  holidays: '/holidays',
-  asset_management: '/assets',
-  visitor_management: '/visitors',
-  attendance_analytics: '/attendance-analytics',
   workforce_analytics: '/admin/workforce',
-  help_support: '/helpdesk',
 };
 
 export function MoreModulesScreen({
@@ -112,7 +105,7 @@ export function MoreModulesScreen({
         {activeSubModule === 'holidays' ? (
           <HolidayWorkspaceShell
             embedded
-            startInDirectory={false}
+            startInDirectory={true}
             initialModule="dashboard"
           />
         ) : activeSubModule === 'shifts_rosters' ? (
@@ -125,23 +118,52 @@ export function MoreModulesScreen({
             onSuccessToast={onSuccessToast}
           />
         ) : activeSubModule === 'payroll' ? (
-          <PayrollWorkspaceShell embedded startInDirectory={false} initialModule="dashboard" />
+          <PayrollWorkspaceShell
+            embedded
+            startInDirectory={true}
+            initialModule="dashboard"
+            onBackFromEmbedded={() => onSelectSubModule(null)}
+          />
         ) : activeSubModule === 'payroll_analytics' ? (
-          <PayrollWorkspaceShell embedded startInDirectory={false} initialModule="reports" />
+          <PayrollWorkspaceShell
+            embedded
+            startInDirectory={false}
+            initialModule="reports"
+            onBackFromEmbedded={() => onSelectSubModule(null)}
+          />
         ) : activeSubModule === 'exit_management' ? (
-          <PayrollWorkspaceShell embedded startInDirectory={false} initialModule="fnf-settlement" />
+          <PayrollWorkspaceShell
+            embedded
+            startInDirectory={false}
+            initialModule="fnf-settlement"
+            onBackFromEmbedded={() => onSelectSubModule(null)}
+          />
         ) : activeSubModule === 'compliance_center' ? (
-          <PayrollWorkspaceShell embedded startInDirectory={false} initialModule="statutory" />
+          <PayrollWorkspaceShell
+            embedded
+            startInDirectory={false}
+            initialModule="statutory"
+            onBackFromEmbedded={() => onSelectSubModule(null)}
+          />
         ) : activeSubModule === 'recruitment' ? (
-          <RecruitmentWorkspaceShell embedded startInDirectory={false} initialModule="dashboard" />
+          <RecruitmentWorkspaceShell
+            embedded
+            startInDirectory={true}
+            initialModule="dashboard"
+            onBackFromEmbedded={() => onSelectSubModule(null)}
+          />
         ) : activeSubModule === 'onboarding' ? (
-          <OnboardingWorkspaceShell embedded startInDirectory={false} initialModule="dashboard" />
+          <OnboardingWorkspaceShell embedded startInDirectory={true} initialModule="dashboard" />
         ) : activeSubModule === 'asset_management' ? (
-          <AssetWorkspaceShell embedded startInDirectory={false} initialModule="dashboard" />
+          <AssetWorkspaceShell embedded startInDirectory={true} initialModule="dashboard" />
         ) : activeSubModule === 'visitor_management' ? (
-          <VisitorWorkspaceShell embedded startInDirectory={false} initialModule="dashboard" />
+          <VisitorWorkspaceShell embedded startInDirectory={true} initialModule="dashboard" />
         ) : activeSubModule === 'attendance_analytics' ? (
-          <AttendanceAnalyticsWorkspaceShell embedded startInDirectory={false} initialModule="overview" />
+          <AttendanceAnalyticsWorkspaceShell embedded startInDirectory={true} initialModule="overview" />
+        ) : activeSubModule === 'settings' ? (
+          <SettingsWorkspaceShell onSuccessToast={onSuccessToast} />
+        ) : activeSubModule === 'help_support' ? (
+          <HelpDeskApp embedded startInDirectory initialNavId="overview" />
         ) : (
           <View
             style={[

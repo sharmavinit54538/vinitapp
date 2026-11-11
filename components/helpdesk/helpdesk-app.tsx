@@ -49,13 +49,16 @@ import { CheckCircle2, X } from 'lucide-react';
 interface HelpDeskAppProps {
   initialNavId?: HelpDeskNavId;
   initialTicketId?: string;
+  embedded?: boolean;
+  startInDirectory?: boolean;
 }
 
 function HelpDeskAppInner({
   initialNavId = 'overview',
   initialTicketId,
+  embedded = false,
+  startInDirectory = true,
 }: HelpDeskAppProps) {
-  const router = useRouter();
   const [activeNavId, setActiveNavId] = useState<HelpDeskNavId>(initialNavId);
   const [activeRole, setActiveRole] = useState<Ofc360Role>('hr_admin');
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -130,12 +133,18 @@ function HelpDeskAppInner({
   return (
     <HelpDeskShell
       activeNavId={activeNavId}
+      onSelectNavId={(id) => {
+        setSelectedTicketId(null);
+        setActiveNavId(id);
+      }}
       activeRole={activeRole}
       onRoleChange={setActiveRole}
       isDarkMode={isDarkMode}
       onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
       onOpenNewTicket={() => setNewTicketModalOpen(true)}
       onOpenAiAssist={() => setAiModalOpen(true)}
+      embedded={embedded}
+      startInDirectory={startInDirectory}
     >
       {/* Toast Notification */}
       {toastMessage && (

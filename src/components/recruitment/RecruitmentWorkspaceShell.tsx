@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import {
   Gauge,
   FileSpreadsheet,
@@ -25,9 +26,11 @@ import {
   History,
   Bell,
   Briefcase,
-  ChevronRight,
   CheckCircle2,
   ArrowLeft,
+  Search,
+  X,
+  Grid,
 } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { setActiveRole } from '@/lib/store';
@@ -341,7 +344,7 @@ export function RecruitmentWorkspaceShell({
   initialModule = 'dashboard',
   startInDirectory = false,
   embedded = false,
-  onBackFromEmbedded,
+  onBackFromEmbedded: _onBackFromEmbedded,
 }: {
   initialModule?: RecruitmentModuleId;
   startInDirectory?: boolean;
@@ -353,6 +356,7 @@ export function RecruitmentWorkspaceShell({
   const [viewMode, setViewMode] = useState<'directory' | 'module'>(
     startInDirectory ? 'directory' : 'module'
   );
+  const [searchQuery, setSearchQuery] = useState('');
   const [roleOverride, setRoleOverride] = useState<RecruitmentRole | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
@@ -365,7 +369,7 @@ export function RecruitmentWorkspaceShell({
     }, 3400);
   };
 
-  const handleRoleChange = (nextRole: RecruitmentRole) => {
+  const _handleRoleChange = (nextRole: RecruitmentRole) => {
     setRoleOverride(nextRole);
     const mappedStoreRole: Ofc360Role =
       nextRole === 'super_admin'
@@ -392,248 +396,333 @@ export function RecruitmentWorkspaceShell({
     RECRUITMENT_MODULES_REGISTRY.find((m) => m.id === activeModule) ||
     RECRUITMENT_MODULES_REGISTRY[0];
 
-  const renderDirectoryCards = () => (
-    <div className="space-y-3.5" data-testid="recruitment-23-modules-directory">
-      {CARD_GROUPS.map((groupNum) => {
-        const groupItems = RECRUITMENT_MODULES_REGISTRY.filter(
-          (m) => m.cardGroup === groupNum
-        );
-        return (
-          <div
-            key={groupNum}
-            className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-[0_2px_12px_-4px_rgba(15,23,42,0.06)] overflow-hidden divide-y divide-slate-100 dark:divide-slate-800/80"
+  const queryTrimmed = searchQuery.toLowerCase().trim();
+  const filteredModules = RECRUITMENT_MODULES_REGISTRY.filter((m) => {
+    return (
+      !queryTrimmed ||
+      m.label.toLowerCase().includes(queryTrimmed) ||
+      m.shortLabel.toLowerCase().includes(queryTrimmed) ||
+      m.subtitle.toLowerCase().includes(queryTrimmed)
+    );
+  });
+
+  const renderDirectoryCards = () => {
+    if (filteredModules.length === 0) {
+      return (
+        <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 text-center shadow-xs">
+          <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+            No modules found matching &ldquo;{searchQuery}&rdquo;
+          </p>
+          <button
+            type="button"
+            onClick={() => setSearchQuery('')}
+            className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:underline cursor-pointer"
           >
-            {groupItems.map((item) => {
-              const ItemIcon = item.Icon;
-              const hasAccess = perms.canAccessModule(item.id);
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => handleOpenModule(item.id)}
-                  className={`w-full text-left px-4 py-3.5 flex items-center justify-between gap-3.5 transition active:scale-[0.99] hover:bg-slate-50/80 dark:hover:bg-slate-800/50 ${
-                    hasAccess ? '' : 'opacity-60'
-                  }`}
-                >
-                  <div
-                    className={`w-11 h-11 rounded-2xl shrink-0 flex items-center justify-center ${item.iconBgClass} ${item.iconColorClass}`}
+            Clear Search
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-3.5" data-testid="recruitment-23-modules-directory">
+        {CARD_GROUPS.map((groupNum) => {
+          const groupItems = filteredModules.filter(
+            (m) => m.cardGroup === groupNum
+          );
+          if (groupItems.length === 0) return null;
+
+          return (
+            <div
+              key={groupNum}
+              className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-[0_2px_12px_-4px_rgba(15,23,42,0.06)] overflow-hidden divide-y divide-slate-100 dark:divide-slate-800/80"
+            >
+              {groupItems.map((item) => {
+                const ItemIcon = item.Icon;
+                const hasAccess = perms.canAccessModule(item.id);
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => handleOpenModule(item.id)}
+                    className={`w-full text-left px-4 py-3.5 flex items-center gap-3.5 transition active:scale-[0.99] hover:bg-slate-50/80 dark:hover:bg-slate-800/50 cursor-pointer ${
+                      hasAccess ? '' : 'opacity-60'
+                    }`}
                   >
-                    <ItemIcon className="w-5 h-5 stroke-[2.2]" />
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[14px] font-bold text-slate-900 dark:text-white leading-snug truncate">
-                      {item.label}
+                    <div
+                      className={`w-10 h-10 rounded-2xl shrink-0 flex items-center justify-center ${item.iconBgClass} ${item.iconColorClass}`}
+                    >
+                      <ItemIcon className="w-5 h-5 stroke-[2.2]" />
                     </div>
-                    <div className="text-[12px] font-medium text-slate-500 dark:text-slate-400 leading-snug truncate mt-0.5">
-                      {item.subtitle}
-                    </div>
-                  </div>
 
-                  <div className="w-7 h-7 rounded-full bg-indigo-50/90 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shrink-0 flex items-center justify-center">
-                    <ChevronRight className="w-4 h-4 stroke-[2.4]" />
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        );
-      })}
-    </div>
-  );
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] font-bold text-slate-900 dark:text-white leading-snug truncate">
+                        {item.label}
+                      </div>
+                      <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-snug truncate mt-0.5">
+                        {item.subtitle}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
 
   return (
     <div
       className={
         embedded
-          ? 'space-y-3.5 text-slate-900 dark:text-white'
-          : 'min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white'
+          ? 'space-y-3 text-slate-900 dark:text-white font-sans'
+          : 'min-h-screen bg-slate-100 dark:bg-slate-950 flex justify-center text-slate-900 dark:text-white font-sans antialiased'
       }
     >
-      {!embedded ? (
-        <header className="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 px-4 py-3">
-          <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              {viewMode === 'module' ? (
+      <div
+        className={
+          embedded
+            ? 'w-full space-y-3'
+            : 'w-full max-w-[440px] min-h-screen bg-slate-50 dark:bg-slate-900 border-x border-slate-200 dark:border-slate-800 flex flex-col shadow-sm'
+        }
+      >
+        {toastMsg ? (
+          <div
+            role="status"
+            className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 rounded-2xl bg-slate-900 text-white px-4 py-2.5 text-xs font-semibold shadow-xl flex items-center gap-2"
+          >
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <span>{toastMsg}</span>
+          </div>
+        ) : null}
+
+        {/* 1. STICKY MOBILE TOP APP BAR (Standalone /recruitment route) */}
+        {!embedded && (
+          <header className="sticky top-0 z-30 h-14 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 px-4 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <Link
+                href="/?tab=more"
+                className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 transition-colors"
+                aria-label="Back to All Modules"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Link>
+              <span className="text-[17px] font-extrabold tracking-tight text-slate-900 dark:text-white">
+                OFC360
+              </span>
+            </div>
+          </header>
+        )}
+
+        {/* 2. MAIN CONTENT AREA */}
+        <main className={embedded ? 'space-y-3.5' : 'flex-1 p-3.5 space-y-3.5 overflow-x-hidden'}>
+          {/* App-style "← Back to All Modules" bar when standalone (!embedded) */}
+          {!embedded && (
+            <div className="rounded-3xl p-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-2.5 shadow-2xs">
+              <Link
+                href="/?tab=more"
+                className="min-h-[40px] px-3.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-indigo-600 dark:text-indigo-400 text-xs font-semibold inline-flex items-center justify-center hover:bg-indigo-50/60 transition-colors"
+              >
+                ← Back to All Modules
+              </Link>
+              <span className="text-[15px] font-bold text-slate-900 dark:text-white">
+                Recruitment
+              </span>
+            </div>
+          )}
+
+          {viewMode === 'directory' ? (
+            <>
+              {/* Clean Search Card */}
+              <div className="rounded-2xl p-2.5 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search 23 recruitment modules..."
+                    className="w-full h-9 pl-8.5 pr-8 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {renderDirectoryCards()}
+            </>
+          ) : (
+            <section className="w-full min-w-0 space-y-3.5">
+              {/* Sub-module Back Bar to return to Recruitment Modules list */}
+              <div className="rounded-3xl px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-2.5 shadow-2xs">
                 <button
                   type="button"
                   onClick={() => setViewMode('directory')}
-                  className="h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold inline-flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 bg-indigo-50/60 dark:bg-slate-800"
+                  className="min-h-[38px] px-3.5 rounded-xl bg-indigo-50 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer active:scale-95"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>All 23 Modules</span>
+                  <span>Back to Recruitment Modules</span>
                 </button>
-              ) : onBackFromEmbedded ? (
-                <button
-                  type="button"
-                  onClick={onBackFromEmbedded}
-                  className="h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold inline-flex items-center gap-1"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>Back</span>
-                </button>
+
+                <div className="flex items-center gap-2 min-w-0">
+                  <div
+                    className={`w-7 h-7 rounded-xl shrink-0 flex items-center justify-center ${activeMeta.iconBgClass} ${activeMeta.iconColorClass}`}
+                  >
+                    <activeMeta.Icon className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="text-right min-w-0">
+                    <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                      {activeMeta.label}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {activeModule === 'dashboard' ? (
+                <RecruitmentDashboardModule
+                  onNavigateModule={(mod) => handleOpenModule(mod)}
+                  onToast={triggerToast}
+                />
               ) : null}
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-extrabold tracking-tight text-indigo-600 dark:text-indigo-400">
-                    OFC360 RECRUITMENT & ATS
-                  </span>
-                  <span className="text-xs text-slate-400">/</span>
-                  <span className="text-sm font-bold text-slate-900 dark:text-white">
-                    {viewMode === 'directory' ? '23 Recruitment Modules' : activeMeta.label}
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-500">
-                  23-Module Enterprise Talent Acquisition & ATS Suite · Zero Client-Side AI/Math · REST API Driven
-                </p>
-              </div>
-            </div>
+              {activeModule === 'requisitions' ? (
+                <ManpowerRequisitionsModule onToast={triggerToast} />
+              ) : null}
+              {activeModule === 'job-postings' ? (
+                <JobPostingSourcingModule onToast={triggerToast} />
+              ) : null}
+              {activeModule === 'career-portal' ? (
+                <CareerPageCandidatePortalModule onToast={triggerToast} />
+              ) : null}
+              {activeModule === 'candidates' ? (
+                <CandidateDatabaseModule onToast={triggerToast} />
+              ) : null}
+              {activeModule === 'resume-screening' ? (
+                <ResumeParsingAiScreeningModule onToast={triggerToast} />
+              ) : null}
+              {activeModule === 'pipeline' ? (
+                <ApplicationPipelineModule onToast={triggerToast} />
+              ) : null}
+              {activeModule === 'assessments' ? (
+                <AssessmentsTestsModule onToast={triggerToast} />
+              ) : null}
+              {activeModule === 'interviews' ? (
+                <InterviewSchedulingModule onToast={triggerToast} />
+              ) : null}
+              {activeModule === 'video-interviews' ? (
+                <AiVideoInterviewModule onToast={triggerToast} />
+              ) : null}
+              {activeModule === 'scorecards' ? (
+                <EvaluationScorecardsModule onToast={triggerToast} />
+              ) : null}
+              {activeModule === 'offers' ? (
+                <OfferManagementModule onToast={triggerToast} />
+              ) : null}
+              {activeModule === 'bgv' ? (
+                <BackgroundVerificationModule onToast={triggerToast} />
+              ) : null}
+              {activeModule === 'onboarding-handoff' ? (
+                <OnboardingHandoffModule onToast={triggerToast} />
+              ) : null}
+              {activeModule === 'referrals' ? (
+                <ReferralsModule onToast={triggerToast} />
+              ) : null}
+              {activeModule === 'vendors' ? (
+                <VendorsAgenciesModule onToast={triggerToast} />
+              ) : null}
+              {activeModule === 'communications' ? (
+                <CommunicationCenterModule onToast={triggerToast} />
+              ) : null}
+              {activeModule === 'approvals' ? (
+                <RecruitmentApprovalsModule onToast={triggerToast} />
+              ) : null}
+              {activeModule === 'reports' ? (
+                <RecruitmentReportsModule onToast={triggerToast} />
+              ) : null}
+              {activeModule === 'settings' ? (
+                <RecruitmentSettingsAutomationModule onToast={triggerToast} />
+              ) : null}
+              {activeModule === 'audit-logs' ? (
+                <RecruitmentAuditLogsModule onToast={triggerToast} />
+              ) : null}
+              {activeModule === 'notifications' ? (
+                <RecruitmentNotificationsModule onToast={triggerToast} />
+              ) : null}
+              {activeModule === 'hiring-manager' ? (
+                <HiringManagerPortalModule onToast={triggerToast} />
+              ) : null}
+            </section>
+          )}
+        </main>
 
-            <div className="flex items-center gap-2">
-              <label
-                htmlFor="recruitment-rbac-role-select"
-                className="text-[11px] font-semibold text-slate-500"
-              >
-                Active Role:
-              </label>
-              <select
-                id="recruitment-rbac-role-select"
-                value={perms.role}
-                onChange={(e) => handleRoleChange(e.target.value as RecruitmentRole)}
-                className="h-9 px-3 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
-              >
-                <option value="super_admin">Super Admin</option>
-                <option value="hr_admin">HR Admin</option>
-                <option value="recruiter">Recruiter</option>
-                <option value="hiring_manager">Hiring Manager</option>
-                <option value="interviewer">Interviewer</option>
-                <option value="approver">Approver</option>
-                <option value="candidate">Candidate</option>
-              </select>
-            </div>
-          </div>
-        </header>
-      ) : null}
-
-      {toastMsg ? (
-        <div
-          role="status"
-          className="fixed bottom-5 right-5 z-50 rounded-2xl bg-slate-900 text-white px-4 py-3 text-xs font-semibold shadow-xl flex items-center gap-2"
-        >
-          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-          <span>{toastMsg}</span>
-        </div>
-      ) : null}
-
-      {viewMode === 'directory' ? (
-        <div className={embedded ? '' : 'max-w-xl mx-auto p-4 lg:p-6'}>
-          {renderDirectoryCards()}
-        </div>
-      ) : (
-        <div className={embedded ? 'space-y-3.5' : 'max-w-7xl mx-auto p-4 lg:p-6 space-y-4'}>
-          <div className="rounded-3xl px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-3">
-            <button
-              type="button"
-              onClick={() => setViewMode('directory')}
-              className="h-9 px-3.5 rounded-xl bg-indigo-50 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 text-xs font-bold inline-flex items-center gap-1.5"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>23 Recruitment Modules</span>
-            </button>
-
-            <div className="flex items-center gap-2 min-w-0">
-              <div
-                className={`w-8 h-8 rounded-xl shrink-0 flex items-center justify-center ${activeMeta.iconBgClass} ${activeMeta.iconColorClass}`}
-              >
-                <activeMeta.Icon className="w-4 h-4" />
-              </div>
-              <div className="text-right min-w-0">
-                <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                  {activeMeta.label}
-                </div>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                  {activeMeta.subtitle}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <section className="w-full min-w-0">
-            {activeModule === 'dashboard' ? (
-              <RecruitmentDashboardModule
-                onNavigateModule={(mod) => handleOpenModule(mod)}
-                onToast={triggerToast}
-              />
-            ) : null}
-            {activeModule === 'requisitions' ? (
-              <ManpowerRequisitionsModule onToast={triggerToast} />
-            ) : null}
-            {activeModule === 'job-postings' ? (
-              <JobPostingSourcingModule onToast={triggerToast} />
-            ) : null}
-            {activeModule === 'career-portal' ? (
-              <CareerPageCandidatePortalModule onToast={triggerToast} />
-            ) : null}
-            {activeModule === 'candidates' ? (
-              <CandidateDatabaseModule onToast={triggerToast} />
-            ) : null}
-            {activeModule === 'resume-screening' ? (
-              <ResumeParsingAiScreeningModule onToast={triggerToast} />
-            ) : null}
-            {activeModule === 'pipeline' ? (
-              <ApplicationPipelineModule onToast={triggerToast} />
-            ) : null}
-            {activeModule === 'assessments' ? (
-              <AssessmentsTestsModule onToast={triggerToast} />
-            ) : null}
-            {activeModule === 'interviews' ? (
-              <InterviewSchedulingModule onToast={triggerToast} />
-            ) : null}
-            {activeModule === 'video-interviews' ? (
-              <AiVideoInterviewModule onToast={triggerToast} />
-            ) : null}
-            {activeModule === 'scorecards' ? (
-              <EvaluationScorecardsModule onToast={triggerToast} />
-            ) : null}
-            {activeModule === 'offers' ? (
-              <OfferManagementModule onToast={triggerToast} />
-            ) : null}
-            {activeModule === 'bgv' ? (
-              <BackgroundVerificationModule onToast={triggerToast} />
-            ) : null}
-            {activeModule === 'onboarding-handoff' ? (
-              <OnboardingHandoffModule onToast={triggerToast} />
-            ) : null}
-            {activeModule === 'referrals' ? (
-              <ReferralsModule onToast={triggerToast} />
-            ) : null}
-            {activeModule === 'vendors' ? (
-              <VendorsAgenciesModule onToast={triggerToast} />
-            ) : null}
-            {activeModule === 'communications' ? (
-              <CommunicationCenterModule onToast={triggerToast} />
-            ) : null}
-            {activeModule === 'approvals' ? (
-              <RecruitmentApprovalsModule onToast={triggerToast} />
-            ) : null}
-            {activeModule === 'reports' ? (
-              <RecruitmentReportsModule onToast={triggerToast} />
-            ) : null}
-            {activeModule === 'settings' ? (
-              <RecruitmentSettingsAutomationModule onToast={triggerToast} />
-            ) : null}
-            {activeModule === 'audit-logs' ? (
-              <RecruitmentAuditLogsModule onToast={triggerToast} />
-            ) : null}
-            {activeModule === 'notifications' ? (
-              <RecruitmentNotificationsModule onToast={triggerToast} />
-            ) : null}
-            {activeModule === 'hiring-manager' ? (
-              <HiringManagerPortalModule onToast={triggerToast} />
-            ) : null}
-          </section>
-        </div>
-      )}
+        {/* 3. STICKY MOBILE BOTTOM NAVIGATION BAR */}
+        {!embedded && (
+          <nav className="sticky bottom-0 z-30 flex h-16 items-center justify-around border-t border-slate-200/80 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 px-2 backdrop-blur-md">
+            {[
+              {
+                id: 'menu',
+                label: 'All Menu',
+                Icon: Grid,
+                isActive: viewMode === 'directory',
+                onTap: () => setViewMode('directory'),
+              },
+              {
+                id: 'dashboard',
+                label: 'Dashboard',
+                Icon: Gauge,
+                isActive: viewMode === 'module' && activeModule === 'dashboard',
+                onTap: () => handleOpenModule('dashboard'),
+              },
+              {
+                id: 'pipeline',
+                label: 'Pipeline',
+                Icon: Kanban,
+                isActive: viewMode === 'module' && activeModule === 'pipeline',
+                onTap: () => handleOpenModule('pipeline'),
+              },
+              {
+                id: 'candidates',
+                label: 'Candidates',
+                Icon: Users,
+                isActive: viewMode === 'module' && activeModule === 'candidates',
+                onTap: () => handleOpenModule('candidates'),
+              },
+              {
+                id: 'interviews',
+                label: 'Interviews',
+                Icon: CalendarClock,
+                isActive: viewMode === 'module' && activeModule === 'interviews',
+                onTap: () => handleOpenModule('interviews'),
+              },
+            ].map((tab) => {
+              const TabIcon = tab.Icon;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={tab.onTap}
+                  className={`flex flex-1 flex-col items-center justify-center gap-1 py-1 text-[10px] font-bold transition-colors cursor-pointer ${
+                    tab.isActive
+                      ? 'text-indigo-600 dark:text-indigo-400'
+                      : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                  }`}
+                >
+                  <TabIcon className="h-5 w-5" />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        )}
+      </div>
     </div>
   );
 }

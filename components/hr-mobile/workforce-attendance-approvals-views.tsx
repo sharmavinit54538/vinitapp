@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { PayrollAnalyticsDashboard } from '@/components/payroll-analytics/payroll-analytics-dashboard';
+import { SettingsWorkspaceShell } from '@/src/components/settings/SettingsWorkspaceShell';
 import {
   HrDashboardDataState,
   ApprovalCategory,
@@ -3772,61 +3773,7 @@ export function MoreModulesScreen({
 
           {/* 10. SETTINGS WORKSPACE */}
           {activeSubModule === 'settings' && (
-            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 space-y-4">
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                Enterprise Organization, RBAC &amp; Application Settings
-              </h4>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3.5 rounded-xl border border-slate-100 dark:border-slate-800">
-                  <div>
-                    <p className="text-sm font-bold text-slate-900 dark:text-white">
-                      Dark Theme Appearance
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      Switch between crisp daylight and OLED slate dark mode
-                    </p>
-                  </div>
-                  {onToggleDarkMode && (
-                    <button
-                      type="button"
-                      onClick={onToggleDarkMode}
-                      className="min-h-[38px] px-4 rounded-xl bg-indigo-600 text-white text-xs font-semibold cursor-pointer"
-                    >
-                      {isDarkMode ? 'Switch to Light' : 'Switch to Dark'}
-                    </button>
-                  )}
-                </div>
-
-                <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl border border-slate-100 dark:border-slate-800">
-                  <div>
-                    <p className="text-sm font-bold text-slate-900 dark:text-white">
-                      Active RBAC Permission Role ({activeRole})
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      Test role-based module visibility and write permissions
-                    </p>
-                  </div>
-                  {onRoleChange && (
-                    <select
-                      value={activeRole}
-                      onChange={(e) => {
-                        const r = e.target.value as Ofc360Role;
-                        onRoleChange(r);
-                        onSuccessToast(`Switched active RBAC role to ${r}.`);
-                      }}
-                      className="h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-xs font-mono"
-                    >
-                      <option value="hr_admin">hr_admin (Full HR Admin)</option>
-                      <option value="super_admin">super_admin (Super Admin)</option>
-                      <option value="manager">manager (Department Manager)</option>
-                      <option value="employee">employee (Read-Only Self-Service)</option>
-                      <option value="it_admin">it_admin (IT Operations)</option>
-                      <option value="executive">executive (Executive Viewer)</option>
-                    </select>
-                  )}
-                </div>
-              </div>
-            </div>
+            <SettingsWorkspaceShell onSuccessToast={onSuccessToast} />
           )}
 
           {/* 11. INTEGRATIONS WORKSPACE */}
