@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "rm -rf .next-dev && mkdir -p .next-dev/server .next/server && echo '{}' > .next-dev/server/app-paths-manifest.json && NEXT_DEV_DIST_DIR=.next-dev next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",

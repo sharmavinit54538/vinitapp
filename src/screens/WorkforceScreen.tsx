@@ -1,25 +1,10 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import {
-  View,
-  Text,
-  Pressable,
-  Modal,
-  StyleSheet,
-} from 'react-native';
-import {
-  Plus,
-  MoreVertical,
-  Users,
-  Building2,
-  Network,
-  UserPlus,
-} from 'lucide-react';
+import { Building2, Network, Plus, UserPlus, X } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Toaster } from 'sonner';
 import { AppDispatch, RootState } from '@/lib/store';
-import { getPalette, FONT_SANS, FONT_MONO } from '../theme/colors';
 import {
   WorkforceEmployee,
   DepartmentAttendanceMetric,
@@ -36,6 +21,11 @@ import {
   CreateDepartmentPayload,
   createDepartmentThunk,
 } from '@/src/features/admin/departments/departmentsThunk';
+import {
+  LinkedInEmptyState,
+  LinkedInSection,
+  LinkedInTopTabs,
+} from '@/src/components/linkedin/LinkedInPrimitives';
 
 interface WorkforceScreenProps {
   workforce: WorkforceEmployee[];
@@ -48,13 +38,17 @@ interface WorkforceScreenProps {
 
 type WorkforceSubView = 'Employee' | 'Department' | 'Org Chart';
 
+const WORKFORCE_TABS: { id: WorkforceSubView; label: string }[] = [
+  { id: 'Employee', label: 'Employees' },
+  { id: 'Department', label: 'Departments' },
+  { id: 'Org Chart', label: 'Org chart' },
+];
+
 export function WorkforceScreen({
   workforce,
-  isDark,
   canManage,
 }: WorkforceScreenProps) {
   const dispatch = useDispatch<AppDispatch>();
-  const palette = getPalette(isDark);
 
   const { items: adminEmployees, submitting: empSubmitting } = useSelector(
     (state: RootState) => state.adminEmployees
@@ -65,21 +59,18 @@ export function WorkforceScreen({
 
   const [subView, setSubView] = useState<WorkforceSubView>('Employee');
   const [isAddDropdownOpen, setIsAddDropdownOpen] = useState(false);
-  const [isViewMenuOpen, setIsViewMenuOpen] = useState(false);
   const [isAddEmployeeDialogOpen, setIsAddEmployeeDialogOpen] = useState(false);
   const [isAddDepartmentDialogOpen, setIsAddDepartmentDialogOpen] = useState(false);
 
-  const departmentOptions = useMemo(() => {
-    const names = adminDepartments.map((d) => d.name);
-    return names.length > 0
-      ? names
-      : ['Engineering', 'People Operations', 'Finance & Legal', 'Sales'];
-  }, [adminDepartments]);
+  const departmentOptions = useMemo(
+    () => adminDepartments.map((d) => d.name),
+    [adminDepartments]
+  );
 
-  const managerOptions = useMemo(() => {
-    const mgrs = adminEmployees.map((e) => e.fullName);
-    return mgrs.length > 0 ? mgrs : ['Aarav Sharma', 'Rohan Verma'];
-  }, [adminEmployees]);
+  const managerOptions = useMemo(
+    () => adminEmployees.map((e) => e.fullName),
+    [adminEmployees]
+  );
 
   const employeeOptions = useMemo(
     () =>
@@ -101,131 +92,166 @@ export function WorkforceScreen({
     setSubView('Department');
   };
 
+  const combinedPeopleCount = Math.max(workforce.length, adminEmployees.length);
+
   return (
-    <View style={styles.stack}>
+    <div className="flex flex-col gap-2 md:gap-3">
       <Toaster position="top-right" richColors />
 
-      {/* Workforce Header Card (rounded-3xl p-5, single-elevation) */}
-      <View
-        style={[
-          styles.card,
-          { backgroundColor: palette.surface, borderColor: palette.border },
-        ]}
-      >
-        <View style={[styles.headerRow, { justifyContent: 'flex-end' }]}>
-          <View style={styles.actionsRow}>
-            {canManage ? (
-              <Pressable
-                onPress={() => setIsAddDropdownOpen(true)}
-                style={[styles.addBtn, { backgroundColor: palette.primary }]}
-              >
-                <Plus size={16} color="#FFFFFF" strokeWidth={2.4} />
-                <Text style={styles.addBtnText}>Add</Text>
-              </Pressable>
-            ) : null}
+      <LinkedInSection>
+        <div className="flex items-center justify-between gap-3 px-4 pt-4 pb-3">
+          <div className="min-w-0">
+            <h1 className="text-[16px] font-semibold text-[#171717] tracking-[-0.01em]">
+              People directory
+            </h1>
+            <p className="text-[12px] text-[#666666] mt-0.5 tabular-nums">
+              {combinedPeopleCount} {combinedPeopleCount === 1 ? 'member' : 'members'} · {adminDepartments.length}{' '}
+              {adminDepartments.length === 1 ? 'department' : 'departments'}
+            </p>
+          </div>
 
-            <Pressable
-              accessibilityLabel="Switch Workforce View"
-              onPress={() => setIsViewMenuOpen(true)}
-              style={[
-                styles.threeDotBtn,
-                { backgroundColor: palette.inputBg, borderColor: palette.border },
-              ]}
+          {canManage ? (
+            <button
+              type="button"
+              onClick={() => setIsAddDropdownOpen(true)}
+              className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md bg-[#0A66C2] px-3.5 text-[13px] font-semibold text-white hover:bg-[#004182] transition-colors cursor-pointer"
             >
-              <MoreVertical size={18} color={palette.textPrimary} strokeWidth={2.2} />
-            </Pressable>
-          </View>
-        </View>
+              <Plus className="h-4 w-4" strokeWidth={2.2} />
+              Add
+            </button>
+          ) : null}
+        </div>
+
+        <LinkedInTopTabs
+          tabs={WORKFORCE_TABS}
+          activeTab={subView}
+          onSelect={setSubView}
+          ariaLabel="Workforce sections"
+        />
 
         {subView === 'Employee' ? (
-          <View style={styles.sectionContent}>
+          <div className="p-4">
             <EmployeesTable />
-          </View>
+          </div>
         ) : null}
 
         {subView === 'Department' ? (
-          <View style={styles.sectionContent}>
+          <div className="p-4">
             <DepartmentsDirectoryTab />
-          </View>
+          </div>
         ) : null}
 
         {subView === 'Org Chart' ? (
-          <View style={styles.orgChartWrap}>
-            <View
-              style={[
-                styles.orgNode,
-                { backgroundColor: palette.inputBg, borderColor: palette.border },
-              ]}
-            >
-              <Network size={22} color={palette.primary} strokeWidth={2.2} />
-              <Text style={[styles.orgRole, { color: palette.primary }]}>
-                Principal HR Operations Director
-              </Text>
-              <Text style={[styles.orgName, { color: palette.textPrimary }]}>
-                Aarav Sharma · <Text style={styles.monoInline}>EMP-3600</Text>
-              </Text>
-              <Text style={[styles.empMeta, { color: palette.textMuted }]}>
-                People Operations · Bengaluru Global HQ
-              </Text>
-            </View>
-            <Text style={[styles.emptySub, { color: palette.textMuted, marginTop: 12 }]}>
-              <Text style={styles.monoInline}>{workforce.length}</Text> Direct & Matrix Reports Connected
-            </Text>
-          </View>
+          <div className="p-4">
+            {workforce.length === 0 && adminEmployees.length === 0 ? (
+              <LinkedInEmptyState
+                title="No reporting hierarchy yet"
+                subtitle="Add employees and departments to populate the organization chart."
+                variant="neutral"
+              />
+            ) : (
+              <div className="divide-y divide-[#E5E7EB] border border-[#E5E7EB] rounded-md">
+                {(workforce.length > 0 ? workforce : adminEmployees).map((person) => {
+                  const displayName = 'name' in person ? person.name : person.fullName;
+                  const empCode = 'employeeId' in person ? person.employeeId : person.employeeCode;
+                  return (
+                    <div
+                      key={person.id}
+                      className="flex items-center justify-between gap-3 px-4 py-3"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[#F3F2EF] text-[#404040]">
+                          <Network className="h-4 w-4" strokeWidth={1.85} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate text-[14px] font-semibold text-[#171717]">
+                            {displayName}
+                          </p>
+                          <p className="truncate text-[12px] text-[#666666]">
+                            {person.designation} · {person.department}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-[12px] text-[#666666] tabular-nums shrink-0">
+                        {empCode}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         ) : null}
-      </View>
+      </LinkedInSection>
 
-      {/* + ADD BOTTOM SHEET (Add Employee / Add Department) */}
-      <Modal
-        visible={isAddDropdownOpen}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setIsAddDropdownOpen(false)}
-      >
-        <Pressable
-          onPress={() => setIsAddDropdownOpen(false)}
-          style={[styles.sheetBackdrop, { backgroundColor: palette.overlay }]}
+      {/* Add Menu Modal */}
+      {isAddDropdownOpen ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Add to workforce"
+          className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/45 md:p-4"
+          onClick={() => setIsAddDropdownOpen(false)}
         >
-          <View
-            style={[
-              styles.bottomSheet,
-              { backgroundColor: palette.surface, borderColor: palette.border },
-            ]}
+          <div
+            className="w-full max-w-[440px] bg-white rounded-t-lg md:rounded-lg border border-[#E5E7EB] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
           >
-            <View style={styles.handleWrap}>
-              <View style={[styles.handleBar, { backgroundColor: palette.handleBar }]} />
-            </View>
-            <Pressable
-              onPress={() => {
-                setIsAddDropdownOpen(false);
-                setIsAddEmployeeDialogOpen(true);
-              }}
-              style={[styles.sheetItem, { backgroundColor: palette.inputBg, borderColor: palette.border }]}
-            >
-              <UserPlus size={18} color={palette.primary} strokeWidth={2.2} />
-              <View style={styles.menuItemCol}>
-                <Text style={[styles.menuItemTitle, { color: palette.textPrimary }]}>
-                  Add Employee
-                </Text>
-              </View>
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                setIsAddDropdownOpen(false);
-                setIsAddDepartmentDialogOpen(true);
-              }}
-              style={[styles.sheetItem, { backgroundColor: palette.inputBg, borderColor: palette.border }]}
-            >
-              <Building2 size={18} color={palette.emerald} strokeWidth={2.2} />
-              <View style={styles.menuItemCol}>
-                <Text style={[styles.menuItemTitle, { color: palette.textPrimary }]}>
-                  Add Department
-                </Text>
-              </View>
-            </Pressable>
-          </View>
-        </Pressable>
-      </Modal>
+            <div className="flex items-center justify-between border-b border-[#E5E7EB] px-4 h-13">
+              <h2 className="text-[15px] font-semibold text-[#171717]">
+                Add to organization
+              </h2>
+              <button
+                type="button"
+                aria-label="Close add menu"
+                onClick={() => setIsAddDropdownOpen(false)}
+                className="flex h-9 w-9 items-center justify-center rounded-md text-[#404040] hover:bg-[#F3F2EF] cursor-pointer"
+              >
+                <X className="h-4 w-4" strokeWidth={2} />
+              </button>
+            </div>
+            <div className="divide-y divide-[#E5E7EB]">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAddDropdownOpen(false);
+                  setIsAddEmployeeDialogOpen(true);
+                }}
+                className="flex w-full items-center gap-3 px-4 py-3.5 text-left hover:bg-[#F3F2EF] transition-colors cursor-pointer"
+              >
+                <span className="flex h-10 w-10 items-center justify-center rounded-md bg-[#F3F2EF] text-[#404040]">
+                  <UserPlus className="h-4 w-4" strokeWidth={1.85} />
+                </span>
+                <div>
+                  <p className="text-[14px] font-semibold text-[#171717]">Add employee</p>
+                  <p className="text-[12px] text-[#666666]">
+                    Create a new employee profile and role assignment
+                  </p>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAddDropdownOpen(false);
+                  setIsAddDepartmentDialogOpen(true);
+                }}
+                className="flex w-full items-center gap-3 px-4 py-3.5 text-left hover:bg-[#F3F2EF] transition-colors cursor-pointer"
+              >
+                <span className="flex h-10 w-10 items-center justify-center rounded-md bg-[#F3F2EF] text-[#404040]">
+                  <Building2 className="h-4 w-4" strokeWidth={1.85} />
+                </span>
+                <div>
+                  <p className="text-[14px] font-semibold text-[#171717]">Add department</p>
+                  <p className="text-[12px] text-[#666666]">
+                    Configure a new department and assign a head
+                  </p>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <EmployeeFormDialog
         open={isAddEmployeeDialogOpen}
@@ -245,246 +271,6 @@ export function WorkforceScreen({
         isSubmitting={deptSubmitting}
         onSubmitDepartment={handleCreateDepartment}
       />
-
-      {/* 3-DOT VIEW SWITCHER BOTTOM SHEET */}
-      <Modal
-        visible={isViewMenuOpen}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setIsViewMenuOpen(false)}
-      >
-        <Pressable
-          onPress={() => setIsViewMenuOpen(false)}
-          style={[styles.sheetBackdrop, { backgroundColor: palette.overlay }]}
-        >
-          <View
-            style={[
-              styles.bottomSheet,
-              { backgroundColor: palette.surface, borderColor: palette.border },
-            ]}
-          >
-            <View style={styles.handleWrap}>
-              <View style={[styles.handleBar, { backgroundColor: palette.handleBar }]} />
-            </View>
-            <Text style={[styles.sheetHeader, { color: palette.textPrimary }]}>
-              Switch Workforce View
-            </Text>
-            {(
-              [
-                { id: 'Employee', Icon: Users },
-                { id: 'Department', Icon: Building2 },
-                { id: 'Org Chart', Icon: Network },
-              ] as const
-            ).map((v) => {
-              const active = subView === v.id;
-              const VIcon = v.Icon;
-              return (
-                <Pressable
-                  key={v.id}
-                  onPress={() => {
-                    setSubView(v.id);
-                    setIsViewMenuOpen(false);
-                  }}
-                  style={[
-                    styles.sheetItem,
-                    {
-                      backgroundColor: active ? palette.primaryLight : palette.inputBg,
-                      borderColor: active ? palette.primary : palette.border,
-                    },
-                  ]}
-                >
-                  <VIcon
-                    size={18}
-                    color={active ? palette.primary : palette.textSecondary}
-                    strokeWidth={2.2}
-                  />
-                  <Text
-                    style={[
-                      styles.menuItemTitle,
-                      { color: active ? palette.primary : palette.textPrimary },
-                    ]}
-                  >
-                    {v.id}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </Pressable>
-      </Modal>
-    </View>
+    </div>
   );
 }
-
-const styles = StyleSheet.create({
-  stack: {
-    gap: 16,
-  },
-  card: {
-    borderRadius: 24,
-    borderWidth: 1,
-    padding: 20,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  titleCol: {
-    flex: 1,
-  },
-  eyebrow: {
-    fontFamily: FONT_SANS,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  title: {
-    fontFamily: FONT_SANS,
-    fontSize: 20,
-    fontWeight: '700',
-    letterSpacing: -0.4,
-    marginTop: 2,
-  },
-  actionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  addBtn: {
-    flexDirection: 'row',
-    gap: 5,
-    paddingHorizontal: 16,
-    height: 48,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addBtnText: {
-    fontFamily: FONT_SANS,
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  threeDotBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sectionContent: {
-    gap: 12,
-  },
-  segmentedBar: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    padding: 4,
-    borderRadius: 16,
-    borderWidth: 1,
-    gap: 4,
-  },
-  segmentItem: {
-    minHeight: 40,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  segmentText: {
-    fontFamily: FONT_SANS,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  emptySub: {
-    fontFamily: FONT_SANS,
-    fontSize: 12,
-    textAlign: 'center',
-  },
-  empMeta: {
-    fontFamily: FONT_SANS,
-    fontSize: 12,
-    marginTop: 2,
-  },
-  monoInline: {
-    fontFamily: FONT_MONO,
-    fontVariant: ['tabular-nums'],
-  },
-  orgChartWrap: {
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  orgNode: {
-    width: '100%',
-    borderRadius: 20,
-    borderWidth: 1,
-    padding: 18,
-    alignItems: 'center',
-    gap: 4,
-  },
-  orgRole: {
-    fontFamily: FONT_SANS,
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 4,
-  },
-  orgName: {
-    fontFamily: FONT_SANS,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  sheetBackdrop: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  bottomSheet: {
-    width: '100%',
-    maxWidth: 440,
-    alignSelf: 'center',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    borderWidth: 1,
-    padding: 20,
-    gap: 10,
-  },
-  handleWrap: {
-    alignItems: 'center',
-    paddingBottom: 6,
-  },
-  handleBar: {
-    width: 40,
-    height: 6,
-    borderRadius: 3,
-  },
-  sheetHeader: {
-    fontFamily: FONT_SANS,
-    fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: -0.3,
-    marginBottom: 4,
-  },
-  sheetItem: {
-    minHeight: 48,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-  },
-  menuItemCol: {
-    flex: 1,
-  },
-  menuItemTitle: {
-    fontFamily: FONT_SANS,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  menuItemSub: {
-    fontFamily: FONT_SANS,
-    fontSize: 12,
-    marginTop: 2,
-  },
-});

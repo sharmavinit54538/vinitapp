@@ -1,15 +1,13 @@
+'use client';
+
 import React from 'react';
-import {
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-} from 'react-native';
 import { LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { getPalette, FONT_SANS, FONT_MONO } from '../theme/colors';
 import { authClient } from '@/lib/auth-api';
 import { HrDashboardDataState } from '@/lib/hr-dashboard-logic';
+import { getInitials } from '@/src/lib/linkedin-ui-helpers';
+import { LinkedInSection } from '@/src/components/linkedin/LinkedInPrimitives';
+import { PWAInstallButton } from '@/src/components/mobile/PWAInstallAndStatus';
 
 interface ProfileScreenProps {
   data: HrDashboardDataState;
@@ -18,14 +16,10 @@ interface ProfileScreenProps {
   onLogout?: () => void;
 }
 
-export function ProfileScreen({
-  data,
-  isDark,
-  onLogout,
-}: ProfileScreenProps) {
+export function ProfileScreen({ data, onLogout }: ProfileScreenProps) {
   const router = useRouter();
-  const palette = getPalette(isDark);
   const profile = data.adminProfile;
+  const initials = getInitials(profile.name);
 
   const handleLogoutClick = () => {
     authClient.clearSession();
@@ -38,167 +32,63 @@ export function ProfileScreen({
   };
 
   return (
-    <View style={styles.stack}>
-      {/* HR Identity Card */}
-      <View
-        style={[
-          styles.heroCard,
-          { backgroundColor: palette.surface, borderColor: palette.border },
-        ]}
-      >
-        <View style={styles.profileTopRow}>
-          <View style={[styles.avatarCircle, { backgroundColor: palette.primary }]}>
-            <Text style={styles.avatarInitials}>AS</Text>
-          </View>
-          <View style={styles.profileMain}>
-            <Text style={[styles.roleMeta, { color: palette.primary }]}>
-              HR Admin Profile · <Text style={styles.monoInline}>{profile.employeeId}</Text>
-            </Text>
-            <Text style={[styles.nameText, { color: palette.textPrimary }]}>
-              {profile.name}
-            </Text>
-            <Text style={[styles.designationText, { color: palette.textSecondary }]}>
-              {profile.designation}
-            </Text>
-          </View>
-        </View>
+    <div className="flex flex-col gap-2 md:gap-3">
+      <LinkedInSection>
+        <div className="flex items-center gap-3.5 px-4 py-4 border-b border-[#E5E7EB]">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#171717] text-[18px] font-semibold text-white">
+            {initials}
+          </div>
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-[18px] font-semibold text-[#171717] tracking-[-0.01em]">
+              {profile.name || 'Account profile'}
+            </h1>
+            <p className="truncate text-[13px] text-[#666666]">
+              {profile.designation || 'HR Operations'}
+              {profile.employeeId ? ` · ${profile.employeeId}` : ''}
+            </p>
+          </div>
+        </div>
 
-        <View style={[styles.metaGrid, { borderTopColor: palette.borderSubtle }]}>
-          <View style={styles.metaItem}>
-            <Text style={[styles.metaLabel, { color: palette.textMuted }]}>Work Email</Text>
-            <Text style={[styles.metaVal, { color: palette.textPrimary }]}>
-              {profile.email}
-            </Text>
-          </View>
-          <View style={styles.metaItem}>
-            <Text style={[styles.metaLabel, { color: palette.textMuted }]}>Department</Text>
-            <Text style={[styles.metaVal, { color: palette.textPrimary }]}>
-              {profile.department}
-            </Text>
-          </View>
-          <View style={styles.metaItem}>
-            <Text style={[styles.metaLabel, { color: palette.textMuted }]}>Primary Hub</Text>
-            <Text style={[styles.metaVal, { color: palette.textPrimary }]}>
-              {profile.location}
-            </Text>
-          </View>
-          <View style={styles.metaItem}>
-            <Text style={[styles.metaLabel, { color: palette.textMuted }]}>Access Level</Text>
-            <Text style={[styles.metaVal, { color: palette.emerald }]}>
-              Verified HR Director
-            </Text>
-          </View>
-        </View>
-      </View>
+        <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:gap-px bg-[#E5E7EB]">
+          <div className="bg-white px-4 py-3.5">
+            <p className="text-[11px] font-medium text-[#666666]">Work email</p>
+            <p className="mt-0.5 text-[14px] font-medium text-[#171717]">
+              {profile.email || '—'}
+            </p>
+          </div>
+          <div className="bg-white px-4 py-3.5">
+            <p className="text-[11px] font-medium text-[#666666]">Department</p>
+            <p className="mt-0.5 text-[14px] font-medium text-[#171717]">
+              {profile.department || '—'}
+            </p>
+          </div>
+          <div className="bg-white px-4 py-3.5">
+            <p className="text-[11px] font-medium text-[#666666]">Primary office</p>
+            <p className="mt-0.5 text-[14px] font-medium text-[#171717]">
+              {profile.location || '—'}
+            </p>
+          </div>
+          <div className="bg-white px-4 py-3.5">
+            <p className="text-[11px] font-medium text-[#666666]">Access level</p>
+            <p className="mt-0.5 text-[14px] font-medium text-[#15803D]">
+              Verified HR Admin
+            </p>
+          </div>
+        </div>
 
-      {/* Compact Logout Button */}
-      <Pressable
-        accessibilityLabel="Logout"
-        onPress={handleLogoutClick}
-        style={[
-          styles.logoutActionBtn,
-          {
-            backgroundColor: isDark ? 'rgba(244,63,94,0.14)' : '#FFF1F2',
-            borderColor: palette.rose,
-          },
-        ]}
-      >
-        <LogOut size={14} color={palette.rose} strokeWidth={2.3} />
-        <Text style={[styles.logoutActionText, { color: palette.rose }]}>
-          Logout
-        </Text>
-      </Pressable>
-    </View>
+        <div className="border-t border-[#E5E7EB] px-4 py-3.5 flex flex-wrap items-center gap-2.5">
+          <PWAInstallButton compact />
+          <button
+            type="button"
+            aria-label="Logout"
+            onClick={handleLogoutClick}
+            className="inline-flex h-9 items-center gap-2 rounded-md border border-[#E5E7EB] bg-white px-3.5 text-[13px] font-semibold text-[#B91C1C] hover:bg-[#FEF2F2] transition-colors cursor-pointer"
+          >
+            <LogOut className="h-4 w-4" strokeWidth={1.9} />
+            Sign out
+          </button>
+        </div>
+      </LinkedInSection>
+    </div>
   );
 }
-
-const styles = StyleSheet.create({
-  stack: {
-    gap: 16,
-  },
-  heroCard: {
-    borderRadius: 24,
-    borderWidth: 1,
-    padding: 20,
-  },
-  profileTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-  },
-  avatarCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarInitials: {
-    fontFamily: FONT_SANS,
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  profileMain: {
-    flex: 1,
-  },
-  roleMeta: {
-    fontFamily: FONT_SANS,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  monoInline: {
-    fontFamily: FONT_MONO,
-    fontVariant: ['tabular-nums'],
-  },
-  nameText: {
-    fontFamily: FONT_SANS,
-    fontSize: 20,
-    fontWeight: '700',
-    letterSpacing: -0.4,
-    marginTop: 2,
-  },
-  designationText: {
-    fontFamily: FONT_SANS,
-    fontSize: 13,
-    marginTop: 2,
-  },
-  metaGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    gap: 12,
-  },
-  metaItem: {
-    width: '47%',
-  },
-  metaLabel: {
-    fontFamily: FONT_SANS,
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  metaVal: {
-    fontFamily: FONT_SANS,
-    fontSize: 13,
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  logoutActionBtn: {
-    alignSelf: 'flex-start',
-    height: 36,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  logoutActionText: {
-    fontFamily: FONT_SANS,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-});

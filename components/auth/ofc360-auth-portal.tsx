@@ -20,6 +20,10 @@ import {
 import { EmailVerificationView } from './email-verification-view';
 import { ChangePasswordForm } from './change-password-form';
 import { HrMobileAppShell } from '@/components/hr-mobile/hr-mobile-shell';
+import { EmployeePortalRoot } from '@/src/screens/employee/EmployeePortalRoot';
+import { ManagerPortalRoot } from '@/src/screens/manager/ManagerPortalRoot';
+import { ItAdminPortalRoot } from '@/src/screens/it-admin/ItAdminPortalRoot';
+import { ExecutivePortalRoot } from '@/src/screens/executive/ExecutivePortalRoot';
 import { Ofc360User, authClient } from '@/lib/auth-api';
 import { Ofc360Role, resolveRoleDashboardPath } from '@/lib/auth-schemas';
 
@@ -122,9 +126,22 @@ export function Ofc360AuthPortal({
   };
 
   if (initialSection === 'roles' || showMobileDashboard) {
+    const resolvedRole = currentUser?.role || initialRolePreview;
+    if (resolvedRole === 'employee') {
+      return <EmployeePortalRoot onLogout={handlePortalLogout} />;
+    }
+    if (resolvedRole === 'manager') {
+      return <ManagerPortalRoot onLogout={handlePortalLogout} />;
+    }
+    if (resolvedRole === 'it_admin') {
+      return <ItAdminPortalRoot onLogout={handlePortalLogout} />;
+    }
+    if (resolvedRole === 'executive') {
+      return <ExecutivePortalRoot onLogout={handlePortalLogout} />;
+    }
     return (
       <HrMobileAppShell
-        initialRole={currentUser?.role || initialRolePreview}
+        initialRole={resolvedRole}
         onLogout={handlePortalLogout}
       />
     );

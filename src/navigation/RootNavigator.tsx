@@ -1,27 +1,14 @@
-import React, { useState, useMemo } from 'react';
-import {
-  SafeAreaView,
-  StatusBar,
-  View,
-  Text,
-  Pressable,
-  ScrollView,
-  Modal,
-  StyleSheet,
-} from 'react-native';
+'use client';
+
+import React, { useMemo, useState } from 'react';
 import {
   Home,
   Users,
   CalendarCheck,
   CheckCircle2,
-  User,
   LayoutGrid,
-  Plus,
-  Heart,
   Bell,
-  CalendarDays,
-  UserPlus,
-  Megaphone,
+  X,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useSelector, useDispatch } from 'react-redux';
@@ -44,10 +31,19 @@ import {
 } from '@/lib/store/hr-api';
 import {
   BottomNavTab,
-  createInitialHrDashboardState,
+  MoreModuleId,
   canManageHrAdminActions,
+  getMoreModulesCatalog,
 } from '@/lib/hr-dashboard-logic';
-import { getPalette, FONT_SANS, FONT_MONO } from '../theme/colors';
+import {
+  LinkedInHeader,
+  LinkedInBottomNav,
+  LinkedInNavItem,
+  LinkedInSearchModal,
+  LinkedInMessagesModal,
+  LinkedInEmptyState,
+  SearchableEntry,
+} from '../components/linkedin/LinkedInPrimitives';
 import { HomeScreen } from '../screens/HomeScreen';
 import { WorkforceScreen } from '../screens/WorkforceScreen';
 import { AttendanceScreen } from '../screens/AttendanceScreen';
@@ -55,34 +51,30 @@ import { ApprovalsScreen } from '../screens/ApprovalsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { MoreModulesScreen } from '../screens/MoreModulesScreen';
 import { AddEmployeeModal, AnnouncementModal } from '../components/NativeModals';
+import {
+  OfflineIndicator,
+  PullToRefreshContainer,
+} from '../components/mobile/PWAInstallAndStatus';
 
-const BOTTOM_TABS: {
-  id: BottomNavTab;
-  label: string;
-  Icon: React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
-}[] = [
-  { id: 'home', label: 'Home', Icon: Home },
-  { id: 'workforce', label: 'Workforce', Icon: Users },
-  { id: 'attendance', label: 'Attendance', Icon: CalendarCheck },
-  { id: 'approvals', label: 'Approvals', Icon: CheckCircle2 },
-  { id: 'profile', label: 'Profile', Icon: User },
-  { id: 'more', label: 'More', Icon: LayoutGrid },
-];
+type PrimaryFiveTab = 'home' | 'workforce' | 'attendance' | 'approvals' | 'more';
 
 export function RootNavigator() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const ui = useSelector((state: RootState) => state.hrMobileUi);
-  const palette = getPalette(ui.isDarkMode);
 
-  const { data: fetchedData } = useGetHrDashboardQuery();
+  const {
+    data: fetchedData,
+    isLoading,
+    isFetching,
+    isError,
+    refetch,
+  } = useGetHrDashboardQuery();
   const [markNotificationsRead] = useMarkNotificationsReadMutation();
 
-  const fallbackData = useMemo(() => createInitialHrDashboardState(), []);
-  const dashboardData = fetchedData || fallbackData;
   const canManage = canManageHrAdminActions(ui.activeRole);
-
-  const [isQuickSheetOpen, setIsQuickSheetOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isMessagesOpen, setIsMessagesOpen] = useState(false);
 
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -91,14 +83,25 @@ export function RootNavigator() {
       if (tabParam === 'more') {
         dispatch(setBottomTab('more'));
         dispatch(setActiveSubModule(null));
+      } else if (tabParam === 'people' || tabParam === 'workforce') {
+        dispatch(setBottomTab('workforce'));
+      } else if (tabParam === 'attendance') {
+        dispatch(setBottomTab('attendance'));
+      } else if (tabParam === 'approvals') {
+        dispatch(setBottomTab('approvals'));
+      } else if (tabParam === 'profile') {
+        dispatch(setBottomTab('profile'));
       }
     }
   }, [dispatch]);
 
-  const pendingApprovalsCount = dashboardData.approvals.filter(
-    (a) => a.status === 'Pending'
-  ).length;
-  const unreadNotifCount = dashboardData.notifications.filter((n) => !n.read).length;
+  const pendingApprovalsCount = fetchedData
+    ? fetchedData.approvals.filter((a) => a.status === 'Pending').length
+    : 0;
+  const unreadNotifCount = fetchedData
+    ? fetchedData.notifications.filter((n) => !n.read).length
+    : 0;
+  const announcementsCount = fetchedData ? fetchedData.announcements.length : 0;
 
   const triggerToast = (text: string) => {
     dispatch(showToast({ text, type: 'success' }));
@@ -114,128 +117,212 @@ export function RootNavigator() {
   };
 
   const handleSelectBottomTab = (tab: BottomNavTab) => {
-    if (tab !== 'more') {
-      dispatch(setActiveSubModule(null));
-    }
+    dispatch(setActiveSubModule(null));
     dispatch(setBottomTab(tab));
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+    }
   };
 
+  const handleOpenPayrollModule = () => {
+    dispatch(setBottomTab('more'));
+    dispatch(setActiveSubModule('payroll'));
+  };
+
+  const navItems: LinkedInNavItem<PrimaryFiveTab>[] = useMemo(
+    () => [
+      { id: 'home', label: 'Home', Icon: Home },
+      { id: 'workforce', label: 'People', Icon: Users },
+      { id: 'attendance', label: 'Attendance', Icon: CalendarCheck },
+      {
+        id: 'approvals',
+        label: 'Approvals',
+        Icon: CheckCircle2,
+        badgeCount: pendingApprovalsCount,
+      },
+      { id: 'more', label: 'More', Icon: LayoutGrid },
+    ],
+    [pendingApprovalsCount]
+  );
+
+  const searchEntries: SearchableEntry[] = useMemo(() => {
+    const entries: SearchableEntry[] = [];
+
+    if (fetchedData) {
+      const modules = getMoreModulesCatalog(fetchedData);
+      modules.forEach((m) => {
+        entries.push({
+          id: `mod-${m.id}`,
+          title: m.title,
+          subtitle: m.subtitle,
+          group: 'Module',
+          onSelect: () => {
+            if (m.id === 'my_profile') {
+              handleSelectBottomTab('profile');
+            } else if (m.id === 'shifts_rosters') {
+              dispatch(setBottomTab('home'));
+              dispatch(setHomeTab('shifts'));
+            } else if (m.id === 'announcements') {
+              if (canManage) dispatch(setAnnouncementSheetOpen(true));
+              else setIsMessagesOpen(true);
+            } else {
+              dispatch(setBottomTab('more'));
+              dispatch(setActiveSubModule(m.id as MoreModuleId));
+            }
+          },
+        });
+      });
+
+      fetchedData.workforce.forEach((emp) => {
+        entries.push({
+          id: `emp-${emp.id}`,
+          title: emp.name,
+          subtitle: `${emp.designation} · ${emp.department}`,
+          group: 'People',
+          onSelect: () => handleSelectBottomTab('workforce'),
+        });
+      });
+
+      fetchedData.approvals
+        .filter((a) => a.status === 'Pending')
+        .forEach((appr) => {
+          entries.push({
+            id: `appr-${appr.id}`,
+            title: `${appr.employeeName} — ${appr.category}`,
+            subtitle: `${appr.requestType} · ${appr.durationOrAmount}`,
+            group: 'Approval',
+            onSelect: () => handleSelectBottomTab('approvals'),
+          });
+        });
+    }
+
+    return entries;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchedData, canManage]);
+
+  const messageItems = useMemo(
+    () =>
+      (fetchedData?.announcements || []).map((a) => ({
+        id: a.id,
+        title: a.title,
+        body: a.description,
+        meta: `${a.category} · ${a.department} · ${a.publishedDate}`,
+      })),
+    [fetchedData]
+  );
+
+  const activeFiveTab: PrimaryFiveTab =
+    ui.activeBottomTab === 'profile' ? 'more' : ui.activeBottomTab;
+
+  const isFlushMobileView =
+    ui.activeBottomTab === 'home' || ui.activeBottomTab === 'more';
+
   return (
-    <SafeAreaView style={[styles.safeRoot, { backgroundColor: palette.background }]}>
-      <StatusBar barStyle={ui.isDarkMode ? 'light-content' : 'dark-content'} />
+    <div className="min-h-dvh w-full bg-[#F3F2EF] text-[#171717] flex flex-col">
+      {/* Sticky LinkedIn-Inspired Top Header (Mobile & Desktop) */}
+      <LinkedInHeader
+        userName={fetchedData?.adminProfile.name || 'HR Admin'}
+        unreadNotifications={unreadNotifCount}
+        unreadMessages={announcementsCount}
+        navItems={navItems}
+        activeNavId={ui.activeBottomTab === 'profile' ? undefined : activeFiveTab}
+        onSelectNav={(id) => handleSelectBottomTab(id)}
+        onOpenProfile={() => handleSelectBottomTab('profile')}
+        onOpenSearch={() => setIsSearchOpen(true)}
+        onOpenNotifications={() => dispatch(setNotificationsOpen(true))}
+        onOpenMessages={() => setIsMessagesOpen(true)}
+      />
 
-      {/* Centered Mobile Phone Viewport Container (max-w-[440px] mx-auto min-h-screen) */}
-      <View
-        style={[
-          styles.phoneShell,
-          { backgroundColor: palette.background, borderColor: palette.border },
-        ]}
-      >
-        {/* Sticky Frosted Top Bar (h-14 = 56px) */}
-        <View
-          style={[
-            styles.headerBar,
-            { backgroundColor: palette.headerBg, borderBottomColor: palette.border },
-          ]}
+      <OfflineIndicator />
+
+      {/* Clean Functional Toast Notification */}
+      {ui.toastMessage ? (
+        <div
+          role="status"
+          className="fixed bottom-[70px] lg:bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-lg bg-[#171717] px-4 py-2.5 text-xs font-medium text-white max-w-[92vw]"
         >
-          <View style={styles.headerLeft}>
-            <Text style={[styles.brandTitle, { color: palette.textPrimary }]}>
-              OFC360
-            </Text>
-          </View>
+          <CheckCircle2 className="h-4 w-4 text-[#22C55E] shrink-0" strokeWidth={2} />
+          <span className="truncate">{ui.toastMessage.text}</span>
+        </div>
+      ) : null}
 
-          <View style={styles.headerRight}>
-            {canManage ? (
-              <Pressable
-                accessibilityLabel="Quick HR Actions"
-                onPress={() => setIsQuickSheetOpen(true)}
-                style={styles.plainIconBtn}
-              >
-                <Plus size={24} color={palette.textPrimary} strokeWidth={2.2} />
-              </Pressable>
-            ) : null}
-
-            <Pressable
-              accessibilityLabel="Notifications"
-              onPress={() => dispatch(setNotificationsOpen(true))}
-              style={styles.plainIconBtn}
-            >
-              <Heart size={21} color={palette.textPrimary} strokeWidth={2.2} />
-              {unreadNotifCount > 0 ? (
-                <View style={[styles.notifDot, { backgroundColor: palette.rose }]} />
-              ) : null}
-            </Pressable>
-          </View>
-        </View>
-
-        {/* Native Toast Notification Banner */}
-        {ui.toastMessage ? (
-          <View style={[styles.toastBanner, { backgroundColor: palette.secondaryCta }]}>
-            <CheckCircle2 size={16} color={palette.emerald} strokeWidth={2.4} />
-            <Text style={styles.toastText}>{ui.toastMessage.text}</Text>
-          </View>
+      {/* Main Responsive Workspace */}
+      <main
+        className={`flex-1 w-full mx-auto max-w-[1040px] pb-[74px] lg:pb-8 ${
+          isFlushMobileView ? 'px-0 md:px-6 md:py-5' : 'px-0 md:px-6 md:py-5'
+        }`}
+      >
+        <PullToRefreshContainer onRefresh={() => refetch()}>
+        {ui.activeBottomTab === 'home' ? (
+          <HomeScreen
+            data={fetchedData}
+            isLoading={isLoading || (!fetchedData && isFetching)}
+            isError={isError}
+            onRetry={() => void refetch()}
+            activeHomeTab={ui.activeHomeTab}
+            onSelectHomeTab={(t) => dispatch(setHomeTab(t))}
+            onNavigateTab={handleSelectBottomTab}
+            onOpenAddEmployee={() => dispatch(setAddEmployeeSheetOpen(true))}
+            onOpenAnnouncement={() => dispatch(setAnnouncementSheetOpen(true))}
+            onOpenPayroll={handleOpenPayrollModule}
+            isDark={ui.isDarkMode}
+            canManage={canManage}
+            onSuccessToast={triggerToast}
+          />
         ) : null}
 
-        {/* Active Mobile Screen Content */}
-        <ScrollView
-          style={styles.screenScroll}
-          contentContainerStyle={styles.screenScrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {ui.activeBottomTab === 'home' ? (
-            <HomeScreen
-              data={dashboardData}
-              activeHomeTab={ui.activeHomeTab}
-              onSelectHomeTab={(t) => dispatch(setHomeTab(t))}
-              onNavigateTab={handleSelectBottomTab}
-              onOpenAddEmployee={() => dispatch(setAddEmployeeSheetOpen(true))}
-              onOpenAnnouncement={() => dispatch(setAnnouncementSheetOpen(true))}
-              isDark={ui.isDarkMode}
-              canManage={canManage}
-              onSuccessToast={triggerToast}
-            />
-          ) : null}
-
-          {ui.activeBottomTab === 'workforce' ? (
+        {ui.activeBottomTab === 'workforce' && fetchedData ? (
+          <div className="w-full">
             <WorkforceScreen
-              workforce={dashboardData.workforce}
-              departments={dashboardData.departments}
+              workforce={fetchedData.workforce}
+              departments={fetchedData.departments}
               isDark={ui.isDarkMode}
               canManage={canManage}
               onOpenAddEmployee={() => dispatch(setAddEmployeeSheetOpen(true))}
               onSuccessToast={triggerToast}
             />
-          ) : null}
+          </div>
+        ) : null}
 
-          {ui.activeBottomTab === 'attendance' ? (
+        {ui.activeBottomTab === 'attendance' && fetchedData ? (
+          <div className="w-full">
             <AttendanceScreen
-              data={dashboardData}
+              data={fetchedData}
               isDark={ui.isDarkMode}
               onSuccessToast={triggerToast}
             />
-          ) : null}
+          </div>
+        ) : null}
 
-          {ui.activeBottomTab === 'approvals' ? (
+        {ui.activeBottomTab === 'approvals' ? (
+          <div className="w-full">
             <ApprovalsScreen
-              approvals={dashboardData.approvals}
+              approvals={fetchedData?.approvals || []}
+              isLoading={isLoading || (!fetchedData && isFetching)}
+              isError={isError}
+              onRetry={() => void refetch()}
               isDark={ui.isDarkMode}
               canManage={canManage}
               onSuccessToast={triggerToast}
             />
-          ) : null}
+          </div>
+        ) : null}
 
-          {ui.activeBottomTab === 'profile' ? (
+        {ui.activeBottomTab === 'profile' && fetchedData ? (
+          <div className="w-full">
             <ProfileScreen
-              data={dashboardData}
+              data={fetchedData}
               isDark={ui.isDarkMode}
               onSuccessToast={triggerToast}
               onLogout={handleLogout}
             />
-          ) : null}
+          </div>
+        ) : null}
 
-          {ui.activeBottomTab === 'more' ? (
+        {ui.activeBottomTab === 'more' && fetchedData ? (
+          <div className="w-full">
             <MoreModulesScreen
-              data={dashboardData}
+              data={fetchedData}
               activeSubModule={ui.activeSubModule}
               onSelectSubModule={(id) => dispatch(setActiveSubModule(id))}
               onNavigateBottomTab={handleSelectBottomTab}
@@ -245,192 +332,108 @@ export function RootNavigator() {
               canManage={canManage}
               onSuccessToast={triggerToast}
             />
-          ) : null}
-        </ScrollView>
+          </div>
+        ) : null}
+        </PullToRefreshContainer>
+      </main>
 
-        {/* Sticky Bottom Navigation Bar (h-16 = 64px, 10px labels, active indigo-600) */}
-        <View
-          style={[
-            styles.bottomTabBar,
-            { backgroundColor: palette.tabBarBg, borderTopColor: palette.border },
-          ]}
-        >
-          {BOTTOM_TABS.map((tab) => {
-            const active = ui.activeBottomTab === tab.id;
-            const showBadge = tab.id === 'approvals' && pendingApprovalsCount > 0;
-            const TabIcon = tab.Icon;
-            return (
-              <Pressable
-                key={tab.id}
-                accessibilityLabel={tab.label}
-                onPress={() => handleSelectBottomTab(tab.id)}
-                style={styles.tabItem}
-              >
-                <View style={styles.tabIconWrap}>
-                  <TabIcon
-                    size={22}
-                    color={active ? palette.primary : palette.textMuted}
-                    strokeWidth={active ? 2.4 : 1.9}
-                  />
-                  {showBadge ? (
-                    <View style={[styles.tabBadge, { backgroundColor: palette.primary }]}>
-                      <Text style={styles.tabBadgeText}>{pendingApprovalsCount}</Text>
-                    </View>
-                  ) : null}
-                </View>
-              </Pressable>
-            );
-          })}
-        </View>
-      </View>
+      {/* Fixed 5-Item Mobile Bottom Navigation Bar */}
+      <LinkedInBottomNav
+        items={navItems}
+        activeId={activeFiveTab}
+        onSelect={(id) => handleSelectBottomTab(id)}
+      />
 
-      {/* Quick Action Bottom Sheet Modal */}
-      <Modal
-        visible={isQuickSheetOpen}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setIsQuickSheetOpen(false)}
-      >
-        <Pressable
-          onPress={() => setIsQuickSheetOpen(false)}
-          style={[styles.sheetBackdrop, { backgroundColor: palette.overlay }]}
+      {/* Functional Global Search Modal */}
+      <LinkedInSearchModal
+        open={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        entries={searchEntries}
+      />
+
+      {/* Functional Messages & Notices Modal */}
+      <LinkedInMessagesModal
+        open={isMessagesOpen}
+        onClose={() => setIsMessagesOpen(false)}
+        items={messageItems}
+        canCompose={canManage}
+        onCompose={() => dispatch(setAnnouncementSheetOpen(true))}
+      />
+
+      {/* Notifications Sheet Modal */}
+      {ui.isNotificationsOpen ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Notifications"
+          className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/45 md:p-4"
+          onClick={() => dispatch(setNotificationsOpen(false))}
         >
-          <View
-            style={[
-              styles.quickSheet,
-              { backgroundColor: palette.surface, borderColor: palette.border },
-            ]}
+          <div
+            className="w-full max-w-[540px] bg-white rounded-t-lg md:rounded-lg border border-[#E5E7EB] overflow-hidden max-h-[85vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
           >
-            <View style={styles.dragHandleWrap}>
-              <View style={[styles.dragHandle, { backgroundColor: palette.handleBar }]} />
-            </View>
-            <Text style={[styles.sheetTitle, { color: palette.textPrimary }]}>
-              Quick HR Actions
-            </Text>
-            <Text style={[styles.sheetSub, { color: palette.textMuted }]}>
-              Select an administrative workflow to launch
-            </Text>
-
-            <View style={styles.sheetList}>
-              <Pressable
-                onPress={() => {
-                  setIsQuickSheetOpen(false);
-                  dispatch(setAddEmployeeSheetOpen(true));
-                }}
-                style={[
-                  styles.quickItem,
-                  { backgroundColor: palette.inputBg, borderColor: palette.border },
-                ]}
-              >
-                <UserPlus size={18} color={palette.primary} strokeWidth={2.2} />
-                <Text style={[styles.quickItemTitle, { color: palette.textPrimary }]}>
-                  Add Workforce Employee
-                </Text>
-              </Pressable>
-
-              <Pressable
-                onPress={() => {
-                  setIsQuickSheetOpen(false);
-                  dispatch(setAnnouncementSheetOpen(true));
-                }}
-                style={[
-                  styles.quickItem,
-                  { backgroundColor: palette.inputBg, borderColor: palette.border },
-                ]}
-              >
-                <Megaphone size={18} color={palette.violet} strokeWidth={2.2} />
-                <Text style={[styles.quickItemTitle, { color: palette.textPrimary }]}>
-                  Broadcast Enterprise Announcement
-                </Text>
-              </Pressable>
-
-              <Pressable
-                onPress={() => {
-                  setIsQuickSheetOpen(false);
-                  dispatch(setHomeTab('holidays'));
-                  handleSelectBottomTab('home');
-                }}
-                style={[
-                  styles.quickItem,
-                  { backgroundColor: palette.inputBg, borderColor: palette.border },
-                ]}
-              >
-                <CalendarDays size={18} color={palette.emerald} strokeWidth={2.2} />
-                <Text style={[styles.quickItemTitle, { color: palette.textPrimary }]}>
-                  Open 2026 Holiday Calendar
-                </Text>
-              </Pressable>
-            </View>
-          </View>
-        </Pressable>
-      </Modal>
-
-      {/* Notifications Bottom Sheet Modal */}
-      <Modal
-        visible={ui.isNotificationsOpen}
-        transparent
-        animationType="slide"
-        onRequestClose={() => {
-          dispatch(setNotificationsOpen(false));
-        }}
-      >
-        <Pressable
-          onPress={() => dispatch(setNotificationsOpen(false))}
-          style={[styles.sheetBackdrop, { backgroundColor: palette.overlay }]}
-        >
-          <View
-            style={[
-              styles.quickSheet,
-              { backgroundColor: palette.surface, borderColor: palette.border },
-            ]}
-          >
-            <View style={styles.dragHandleWrap}>
-              <View style={[styles.dragHandle, { backgroundColor: palette.handleBar }]} />
-            </View>
-            <View style={styles.notifHeaderRow}>
-              <Text style={[styles.sheetTitle, { color: palette.textPrimary }]}>
-                Notifications ({dashboardData.notifications.length})
-              </Text>
-              {unreadNotifCount > 0 ? (
-                <Pressable onPress={() => markNotificationsRead({})}>
-                  <Text style={[styles.markReadText, { color: palette.primary }]}>
-                    Mark all read
-                  </Text>
-                </Pressable>
-              ) : null}
-            </View>
-            {dashboardData.notifications.length === 0 ? (
-              <Text style={[styles.emptyNotif, { color: palette.textMuted }]}>
-                No new mobile alerts. You are all caught up.
-              </Text>
-            ) : (
-              <View style={styles.sheetList}>
-                {dashboardData.notifications.map((n) => (
-                  <View
-                    key={n.id}
-                    style={[
-                      styles.quickItem,
-                      { backgroundColor: palette.inputBg, borderColor: palette.border },
-                    ]}
+            <div className="flex items-center justify-between border-b border-[#E5E7EB] px-4 h-14">
+              <h2 className="text-base font-semibold text-[#171717]">
+                Notifications
+              </h2>
+              <div className="flex items-center gap-2">
+                {unreadNotifCount > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => void markNotificationsRead({})}
+                    className="h-8 rounded-md px-2.5 text-xs font-semibold text-[#0A66C2] hover:bg-[#F3F2EF] cursor-pointer"
                   >
-                    <Bell size={16} color={palette.primary} />
-                    <View style={styles.notifTextCol}>
-                      <Text style={[styles.quickItemTitle, { color: palette.textPrimary }]}>
-                        {n.title}
-                      </Text>
-                      <Text style={[styles.notifSub, { color: palette.textMuted }]}>
-                        {n.message}
-                      </Text>
-                    </View>
-                  </View>
-                ))}
-              </View>
-            )}
-          </View>
-        </Pressable>
-      </Modal>
+                    Mark all read
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => dispatch(setNotificationsOpen(false))}
+                  aria-label="Close notifications"
+                  className="flex h-9 w-9 items-center justify-center rounded-md text-[#404040] hover:bg-[#F3F2EF] cursor-pointer"
+                >
+                  <X className="h-4 w-4" strokeWidth={2} />
+                </button>
+              </div>
+            </div>
 
-      {/* Shared Native Modals */}
+            <div className="overflow-y-auto divide-y divide-[#E5E7EB]">
+              {!fetchedData || fetchedData.notifications.length === 0 ? (
+                <LinkedInEmptyState
+                  title="You're all caught up"
+                  subtitle="No unread notifications."
+                  variant="success"
+                />
+              ) : (
+                fetchedData.notifications.map((n) => (
+                  <div
+                    key={n.id}
+                    className={`flex items-start gap-3 px-4 py-3.5 ${
+                      n.read ? 'bg-white' : 'bg-[#EBF4FD]/40'
+                    }`}
+                  >
+                    <Bell
+                      className="h-4 w-4 text-[#404040] mt-0.5 shrink-0"
+                      strokeWidth={1.85}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-[#171717]">
+                        {n.title}
+                      </p>
+                      <p className="mt-0.5 text-xs text-[#666666] leading-relaxed">
+                        {n.message}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Shared Modals */}
       <AddEmployeeModal
         visible={ui.isAddEmployeeSheetOpen}
         isDark={ui.isDarkMode}
@@ -444,205 +447,6 @@ export function RootNavigator() {
         onClose={() => dispatch(setAnnouncementSheetOpen(false))}
         onSuccessToast={triggerToast}
       />
-    </SafeAreaView>
+    </div>
   );
 }
-
-const styles = StyleSheet.create({
-  safeRoot: {
-    flex: 1,
-    height: 844,
-    maxHeight: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  phoneShell: {
-    flex: 1,
-    height: '100%',
-    width: '100%',
-    maxWidth: 440,
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
-    overflow: 'hidden',
-  },
-  headerBar: {
-    height: 56, // h-14
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 18,
-    borderBottomWidth: 1,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  brandTitle: {
-    fontFamily: FONT_SANS,
-    fontSize: 19,
-    fontWeight: '800',
-    letterSpacing: -0.5,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  plainIconBtn: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 14,
-  },
-  notifDot: {
-    position: 'absolute',
-    top: 10,
-    right: 9,
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-  },
-  toastBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginHorizontal: 16,
-    marginTop: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 16,
-  },
-  toastText: {
-    fontFamily: FONT_SANS,
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  screenScroll: {
-    flex: 1,
-  },
-  screenScrollContent: {
-    padding: 16,
-    paddingBottom: 28,
-  },
-  bottomTabBar: {
-    height: 64, // h-16
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    paddingHorizontal: 8,
-  },
-  tabItem: {
-    flex: 1,
-    height: 56,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tabIconWrap: {
-    width: 36,
-    height: 26,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tabBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -6,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: 8,
-  },
-  tabBadgeText: {
-    fontFamily: FONT_MONO,
-    color: '#FFFFFF',
-    fontSize: 9,
-    fontWeight: '700',
-  },
-  tabLabel: {
-    fontFamily: FONT_SANS,
-    fontSize: 10,
-    marginTop: 3,
-    letterSpacing: -0.1,
-  },
-  sheetBackdrop: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  quickSheet: {
-    width: '100%',
-    maxWidth: 440,
-    alignSelf: 'center',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    borderWidth: 1,
-    paddingHorizontal: 20,
-    paddingBottom: 24,
-    paddingTop: 10,
-  },
-  dragHandleWrap: {
-    alignItems: 'center',
-    paddingBottom: 14,
-  },
-  dragHandle: {
-    width: 40, // w-10
-    height: 6, // h-1.5
-    borderRadius: 3,
-  },
-  sheetTitle: {
-    fontFamily: FONT_SANS,
-    fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: -0.3,
-  },
-  sheetSub: {
-    fontFamily: FONT_SANS,
-    fontSize: 13,
-    marginTop: 2,
-    marginBottom: 14,
-  },
-  sheetList: {
-    gap: 10,
-  },
-  quickItem: {
-    minHeight: 48, // h-12 touch target
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 16, // rounded-2xl
-    borderWidth: 1,
-  },
-  quickItemTitle: {
-    fontFamily: FONT_SANS,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  notifHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 14,
-  },
-  notifTextCol: {
-    flex: 1,
-  },
-  notifSub: {
-    fontFamily: FONT_SANS,
-    fontSize: 12,
-    marginTop: 2,
-  },
-  markReadText: {
-    fontFamily: FONT_SANS,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  emptyNotif: {
-    fontFamily: FONT_SANS,
-    fontSize: 13,
-    paddingVertical: 20,
-    textAlign: 'center',
-  },
-});

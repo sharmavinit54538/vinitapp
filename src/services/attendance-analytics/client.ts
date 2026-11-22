@@ -1,4 +1,5 @@
 import { API_BASE_URL, authClient } from '../../../lib/auth-api';
+import { localMockFetch } from '../local-mock-engine';
 
 export interface AttendanceApiErrorPayload {
   code: string;
@@ -115,7 +116,7 @@ export class AttendanceAnalyticsHttpClient {
   constructor(baseUrl?: string, fetchImpl?: typeof fetch) {
     const defaultBase = `${API_BASE_URL.replace(/\/+$/, '')}/api/v1/attendance-analytics`;
     this.baseUrl = (baseUrl || defaultBase).replace(/\/$/, '');
-    this.fetchImpl = fetchImpl || fetch.bind(globalThis);
+    this.fetchImpl = fetchImpl || localMockFetch;
   }
 
   private buildHeaders(

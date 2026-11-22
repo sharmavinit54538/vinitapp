@@ -2,6 +2,33 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+@layer base {
+  html,
+  body {
+    font-family: var(--font-inter), Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: #F3F2EF;
+    color: #171717;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior-y: contain;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  .dark html,
+  .dark body {
+    background-color: #0A0A0A;
+    color: #FAFAFA;
+  }
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
 nextjs-portal {
   display: none !important;
 }

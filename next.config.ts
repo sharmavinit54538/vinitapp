@@ -1,6 +1,7 @@
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
+  distDir: process.env.NEXT_DEV_DIST_DIR || '.next',
   reactStrictMode: true,
   devIndicators: false,
   eslint: {
@@ -25,10 +26,13 @@ const nextConfig: NextConfig = {
   webpack: (config, {dev}) => {
     // HMR is disabled in AI Studio via DISABLE_HMR env var.
     // Do not modify—file watching is disabled to prevent flickering during agent edits.
-    if (dev && process.env.DISABLE_HMR === 'true') {
-      config.watchOptions = {
-        ignored: /.*/,
-      };
+    if (dev) {
+      config.cache = false;
+      if (process.env.DISABLE_HMR === 'true') {
+        config.watchOptions = {
+          ignored: /.*/,
+        };
+      }
     }
     config.resolve.alias = {
       ...(config.resolve.alias || {}),

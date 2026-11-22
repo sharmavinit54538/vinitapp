@@ -392,116 +392,62 @@ export function VisitorWorkspaceShell({
     <div
       className={
         embedded
-          ? 'space-y-4 pb-8'
-          : 'max-w-5xl mx-auto px-3 sm:px-5 py-4 space-y-4 pb-20'
+          ? showDirectory
+            ? 'w-full p-0 m-0'
+            : 'space-y-4 p-4 pb-8'
+          : showDirectory
+            ? 'max-w-5xl mx-auto p-0 m-0'
+            : 'max-w-5xl mx-auto px-3 sm:px-5 py-4 space-y-4 pb-20'
       }
     >
-      {/* Top Header & RBAC Role Switcher */}
-      <div className="rounded-3xl p-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5">
-          {!showDirectory ? (
+      {/* 24-Module Single Continuous Directory */}
+      {showDirectory ? (
+        <div className="w-full bg-white dark:bg-zinc-900 divide-y divide-zinc-100 dark:divide-zinc-800/80">
+          {VISITOR_MODULES_REGISTRY.map((mod) => {
+            const hasAccess = canVisitorRoleAccessModule(
+              activeRole,
+              mod.id
+            );
+            return (
+              <button
+                key={mod.id}
+                type="button"
+                onClick={() => handleSelectModule(mod.id)}
+                className="w-full px-4 py-3.5 flex items-center justify-between gap-3 text-left hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50 transition-colors cursor-pointer"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="text-[14px] font-semibold text-zinc-950 dark:text-white truncate">
+                      {mod.label}
+                    </p>
+                    {!hasAccess ? (
+                      <span className="px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase bg-amber-50 text-amber-700 dark:bg-amber-950/70 dark:text-amber-300">
+                        Restricted
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="text-[12px] font-normal text-zinc-500 dark:text-zinc-400 truncate mt-0.5">
+                    {mod.subtitle}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="space-y-3.5">
+          <div className="rounded-xl px-3.5 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 flex items-center justify-start gap-2.5">
             <button
               type="button"
               onClick={() => setShowDirectory(true)}
-              aria-label="Back to 24 Visitor Modules Directory"
-              className="w-9 h-9 rounded-2xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 flex items-center justify-center hover:bg-indigo-100 transition-colors"
+              className="h-9 px-3 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-950 dark:text-zinc-100 text-xs font-medium inline-flex items-center gap-1.5 cursor-pointer hover:bg-zinc-200/70 transition-colors"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>All Visitor Modules</span>
             </button>
-          ) : null}
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400">
-                Visitor Management • 24 Modules
-              </span>
-            </div>
-            <h1 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white mt-0.5">
-              {showDirectory
-                ? 'Enterprise Visitor, Security & Gate Pass Suite'
-                : currentMeta.label}
-            </h1>
           </div>
+          {renderActiveModule()}
         </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setShowDirectory((prev) => !prev)}
-            className="h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 inline-flex items-center gap-1.5"
-          >
-            <Grid className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-            <span>{showDirectory ? 'Open Active Module' : 'All 24 Modules'}</span>
-          </button>
-
-          <select
-            aria-label="Switch Visitor RBAC Role"
-            value={activeRole}
-            onChange={(e) => setActiveRole(e.target.value as VisitorRole)}
-            className="h-9 px-3 rounded-xl bg-indigo-50/90 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-xs font-bold text-indigo-700 dark:text-indigo-300"
-          >
-            {(Object.keys(VISITOR_ROLE_LABELS) as VisitorRole[]).map((role) => (
-              <option key={role} value={role}>
-                Role: {VISITOR_ROLE_LABELS[role]}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* 24-Module Vertical Grouped Directory (6 + 6 + 6 + 6 = 24) */}
-      {showDirectory ? (
-        <div className="space-y-3.5">
-          {DIRECTORY_GROUPS.map((group, groupIdx) => (
-            <div
-              key={groupIdx}
-              className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs divide-y divide-slate-100 dark:divide-slate-800/80 overflow-hidden"
-            >
-              {group.map((mod) => {
-                const IconComp = mod.icon;
-                const hasAccess = canVisitorRoleAccessModule(
-                  activeRole,
-                  mod.id
-                );
-                return (
-                  <button
-                    key={mod.id}
-                    type="button"
-                    onClick={() => handleSelectModule(mod.id)}
-                    className="w-full px-4 py-3.5 flex items-center justify-between gap-3 text-left hover:bg-slate-50/90 dark:hover:bg-slate-800/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      <div
-                        className={`w-11 h-11 rounded-2xl ${mod.iconBg} ${mod.iconColor} flex items-center justify-center shrink-0`}
-                      >
-                        <IconComp className="w-5 h-5" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-bold text-slate-900 dark:text-white truncate">
-                            {mod.label}
-                          </p>
-                          {!hasAccess ? (
-                            <span className="px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase bg-amber-50 text-amber-700 dark:bg-amber-950/70 dark:text-amber-300">
-                              Restricted
-                            </span>
-                          ) : null}
-                        </div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                          {mod.subtitle}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="w-8 h-8 rounded-full bg-indigo-50/80 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
-                      <ChevronRight className="w-4 h-4" />
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-      ) : (
-        renderActiveModule()
       )}
     </div>
   );

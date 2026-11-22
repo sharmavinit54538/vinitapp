@@ -1,16 +1,10 @@
+'use client';
+
 import React from 'react';
-import {
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-} from 'react-native';
 import { useRouter } from 'next/navigation';
-import { getPalette, FONT_SANS, FONT_MONO } from '../theme/colors';
 import {
   HrDashboardDataState,
   MoreModuleId,
-  MORE_MODULE_CATEGORIES,
   getMoreModulesCatalog,
   BottomNavTab,
   HomeInternalTab,
@@ -24,7 +18,11 @@ import { HolidayWorkspaceShell } from '../components/holidays/HolidayWorkspaceSh
 import { VisitorWorkspaceShell } from '../components/visitors/VisitorWorkspaceShell';
 import { AttendanceAnalyticsWorkspaceShell } from '../components/attendance-analytics/AttendanceAnalyticsWorkspaceShell';
 import { SettingsWorkspaceShell } from '../components/settings/SettingsWorkspaceShell';
+import { EmployeeDocumentsWorkspaceShell } from '../components/documents/EmployeeDocumentsWorkspaceShell';
+import { TravelDeskWorkspaceShell } from '../components/travel-desk/TravelDeskWorkspaceShell';
+import { PerformanceGoalsWorkspaceShell } from '../components/performance/PerformanceGoalsWorkspaceShell';
 import { HelpDeskApp } from '@/components/helpdesk/helpdesk-app';
+import { LinkedInSection } from '@/src/components/linkedin/LinkedInPrimitives';
 
 interface MoreModulesScreenProps {
   data: HrDashboardDataState;
@@ -54,7 +52,6 @@ export function MoreModulesScreen({
   onSuccessToast,
 }: MoreModulesScreenProps) {
   const router = useRouter();
-  const palette = getPalette(isDark);
   const catalog = getMoreModulesCatalog(data);
 
   const handleDirectModuleOpen = (id: MoreModuleId) => {
@@ -77,266 +74,140 @@ export function MoreModulesScreen({
       return;
     }
     onSelectSubModule(id);
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0 });
+    }
   };
 
   if (activeSubModule) {
     const modMeta = catalog.find((m) => m.id === activeSubModule);
-    return (
-      <View style={styles.stack}>
-        <View
-          style={[
-            styles.backBar,
-            { backgroundColor: palette.surface, borderColor: palette.border },
-          ]}
-        >
-          <Pressable
-            onPress={() => onSelectSubModule(null)}
-            style={[styles.backBtn, { backgroundColor: palette.inputBg, borderColor: palette.border }]}
-          >
-            <Text style={[styles.backBtnText, { color: palette.primary }]}>
-              ← Back to All Modules
-            </Text>
-          </Pressable>
-          <Text style={[styles.subTitle, { color: palette.textPrimary }]}>
-            {modMeta?.title || 'Enterprise Module'}
-          </Text>
-        </View>
 
-        {activeSubModule === 'holidays' ? (
-          <HolidayWorkspaceShell
-            embedded
-            startInDirectory={true}
-            initialModule="dashboard"
-          />
-        ) : activeSubModule === 'shifts_rosters' ? (
-          <ShiftsAndRostersScreen
-            mode="shifts"
-            shifts={data.shifts}
-            rosters={data.rosters}
-            isDark={isDark}
-            canManage={canManage}
-            onSuccessToast={onSuccessToast}
-          />
-        ) : activeSubModule === 'payroll' ? (
-          <PayrollWorkspaceShell
-            embedded
-            startInDirectory={true}
-            initialModule="dashboard"
-            onBackFromEmbedded={() => onSelectSubModule(null)}
-          />
-        ) : activeSubModule === 'payroll_analytics' ? (
-          <PayrollWorkspaceShell
-            embedded
-            startInDirectory={false}
-            initialModule="reports"
-            onBackFromEmbedded={() => onSelectSubModule(null)}
-          />
-        ) : activeSubModule === 'exit_management' ? (
-          <PayrollWorkspaceShell
-            embedded
-            startInDirectory={false}
-            initialModule="fnf-settlement"
-            onBackFromEmbedded={() => onSelectSubModule(null)}
-          />
-        ) : activeSubModule === 'compliance_center' ? (
-          <PayrollWorkspaceShell
-            embedded
-            startInDirectory={false}
-            initialModule="statutory"
-            onBackFromEmbedded={() => onSelectSubModule(null)}
-          />
-        ) : activeSubModule === 'recruitment' ? (
-          <RecruitmentWorkspaceShell
-            embedded
-            startInDirectory={true}
-            initialModule="dashboard"
-            onBackFromEmbedded={() => onSelectSubModule(null)}
-          />
-        ) : activeSubModule === 'onboarding' ? (
-          <OnboardingWorkspaceShell embedded startInDirectory={true} initialModule="dashboard" />
-        ) : activeSubModule === 'asset_management' ? (
-          <AssetWorkspaceShell embedded startInDirectory={true} initialModule="dashboard" />
-        ) : activeSubModule === 'visitor_management' ? (
-          <VisitorWorkspaceShell embedded startInDirectory={true} initialModule="dashboard" />
-        ) : activeSubModule === 'attendance_analytics' ? (
-          <AttendanceAnalyticsWorkspaceShell embedded startInDirectory={true} initialModule="overview" />
-        ) : activeSubModule === 'settings' ? (
-          <SettingsWorkspaceShell onSuccessToast={onSuccessToast} />
-        ) : activeSubModule === 'help_support' ? (
-          <HelpDeskApp embedded startInDirectory initialNavId="overview" />
-        ) : (
-          <View
-            style={[
-              styles.card,
-              { backgroundColor: palette.surface, borderColor: palette.border },
-            ]}
-          >
-            <Text style={[styles.catHeader, { color: palette.textMuted }]}>
-              {modMeta?.category}
-            </Text>
-            <Text style={[styles.modDetailTitle, { color: palette.textPrimary }]}>
-              {modMeta?.title}
-            </Text>
-            <Pressable
-              onPress={() => {
-                if (activeSubModule === 'announcements') {
-                  onOpenAnnouncement();
-                } else {
-                  onSuccessToast(`${modMeta?.title} synchronized`);
-                }
-              }}
-              style={[styles.primaryBtn, { backgroundColor: palette.primary, marginTop: 16 }]}
-            >
-              <Text style={styles.primaryBtnText}>
+    return (
+      <div className="flex flex-col">
+        <div className="w-full">
+          {activeSubModule === 'holidays' ? (
+            <HolidayWorkspaceShell
+              embedded
+              startInDirectory={true}
+              initialModule="dashboard"
+            />
+          ) : activeSubModule === 'shifts_rosters' ? (
+            <ShiftsAndRostersScreen
+              mode="shifts"
+              shifts={data.shifts}
+              rosters={data.rosters}
+              isDark={isDark}
+              canManage={canManage}
+              onSuccessToast={onSuccessToast}
+            />
+          ) : activeSubModule === 'payroll' ? (
+            <PayrollWorkspaceShell
+              embedded
+              startInDirectory={true}
+              initialModule="dashboard"
+              onBackFromEmbedded={() => onSelectSubModule(null)}
+            />
+          ) : activeSubModule === 'payroll_analytics' ? (
+            <PayrollWorkspaceShell
+              embedded
+              startInDirectory={false}
+              initialModule="reports"
+              onBackFromEmbedded={() => onSelectSubModule(null)}
+            />
+          ) : activeSubModule === 'exit_management' ? (
+            <PayrollWorkspaceShell
+              embedded
+              startInDirectory={false}
+              initialModule="fnf-settlement"
+              onBackFromEmbedded={() => onSelectSubModule(null)}
+            />
+          ) : activeSubModule === 'compliance_center' ? (
+            <PayrollWorkspaceShell
+              embedded
+              startInDirectory={false}
+              initialModule="statutory"
+              onBackFromEmbedded={() => onSelectSubModule(null)}
+            />
+          ) : activeSubModule === 'recruitment' ? (
+            <RecruitmentWorkspaceShell
+              embedded
+              startInDirectory={true}
+              initialModule="dashboard"
+              onBackFromEmbedded={() => onSelectSubModule(null)}
+            />
+          ) : activeSubModule === 'onboarding' ? (
+            <OnboardingWorkspaceShell embedded startInDirectory={true} initialModule="dashboard" />
+          ) : activeSubModule === 'asset_management' ? (
+            <AssetWorkspaceShell embedded startInDirectory={true} initialModule="dashboard" />
+          ) : activeSubModule === 'visitor_management' ? (
+            <VisitorWorkspaceShell embedded startInDirectory={true} initialModule="dashboard" />
+          ) : activeSubModule === 'attendance_analytics' ? (
+            <AttendanceAnalyticsWorkspaceShell embedded startInDirectory={true} initialModule="overview" />
+          ) : activeSubModule === 'travel_desk' ? (
+            <TravelDeskWorkspaceShell
+              embedded
+              startInDirectory={true}
+              onBackFromEmbedded={() => onSelectSubModule(null)}
+            />
+          ) : activeSubModule === 'performance_goals' ? (
+            <PerformanceGoalsWorkspaceShell
+              embedded
+              onBackFromEmbedded={() => onSelectSubModule(null)}
+            />
+          ) : activeSubModule === 'employee_documents' ||
+            activeSubModule === 'documents_policies' ? (
+            <EmployeeDocumentsWorkspaceShell
+              embedded
+              startInDirectory={true}
+              initialModule="overview"
+            />
+          ) : activeSubModule === 'settings' ? (
+            <SettingsWorkspaceShell onSuccessToast={onSuccessToast} />
+          ) : activeSubModule === 'help_support' ? (
+            <HelpDeskApp embedded startInDirectory initialNavId="overview" />
+          ) : (
+            <LinkedInSection className="p-4">
+              <h2 className="text-[16px] font-semibold text-[#171717]">
+                {modMeta?.title}
+              </h2>
+              <button
+                type="button"
+                onClick={() => {
+                  if (activeSubModule === 'announcements') {
+                    onOpenAnnouncement();
+                  } else {
+                    onSuccessToast(`${modMeta?.title} synchronized`);
+                  }
+                }}
+                className="mt-4 h-9 rounded-md bg-[#0A66C2] px-4 text-[13px] font-semibold text-white hover:bg-[#004182] transition-colors cursor-pointer"
+              >
                 {activeSubModule === 'announcements'
-                  ? '+ Broadcast New Notice'
+                  ? 'Broadcast new notice'
                   : `Open ${modMeta?.title}`}
-              </Text>
-            </Pressable>
-          </View>
-        )}
-      </View>
+              </button>
+            </LinkedInSection>
+          )}
+        </div>
+      </div>
     );
   }
 
   return (
-    <View style={styles.stack}>
-      {MORE_MODULE_CATEGORIES.map((category) => {
-        const items = catalog.filter((m) => m.category === category);
-        if (items.length === 0) return null;
-        return (
-          <View
-            key={category}
-            style={[
-              styles.card,
-              { backgroundColor: palette.surface, borderColor: palette.border },
-            ]}
+    <LinkedInSection>
+      <div className="divide-y divide-[#E5E7EB]">
+        {catalog.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => handleDirectModuleOpen(item.id)}
+            className="flex min-h-[48px] w-full items-center px-4 py-3 text-left hover:bg-[#F3F2EF] transition-colors cursor-pointer"
           >
-            <Text style={[styles.catHeader, { color: palette.textMuted }]}>
-              {category}
-            </Text>
-            <View style={styles.modList}>
-              {items.map((item, idx) => (
-                <Pressable
-                  key={item.id}
-                  onPress={() => handleDirectModuleOpen(item.id)}
-                  style={[
-                    styles.modRow,
-                    idx > 0
-                      ? { borderTopWidth: 1, borderTopColor: palette.borderSubtle }
-                      : null,
-                  ]}
-                >
-                  <View style={styles.modRowInfo}>
-                    <Text style={[styles.modTitle, { color: palette.textPrimary }]}>
-                      {item.title}
-                    </Text>
-                  </View>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-        );
-      })}
-    </View>
+            <span className="text-[14px] font-medium text-[#171717]">
+              {item.title}
+            </span>
+          </button>
+        ))}
+      </div>
+    </LinkedInSection>
   );
 }
-
-const styles = StyleSheet.create({
-  stack: {
-    gap: 16,
-  },
-  backBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderRadius: 24, // rounded-3xl
-    borderWidth: 1,
-    padding: 16,
-    gap: 10,
-  },
-  backBtn: {
-    minHeight: 40,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backBtnText: {
-    fontFamily: FONT_SANS,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  subTitle: {
-    fontFamily: FONT_SANS,
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  card: {
-    borderRadius: 24, // rounded-3xl
-    borderWidth: 1,
-    padding: 20, // p-5
-  },
-  catHeader: {
-    fontFamily: FONT_SANS,
-    fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  modList: {
-    gap: 2,
-  },
-  modRow: {
-    minHeight: 56,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    gap: 12,
-  },
-  modRowInfo: {
-    flex: 1,
-  },
-  modTitle: {
-    fontFamily: FONT_SANS,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  badgeInline: {
-    fontFamily: FONT_MONO,
-    fontVariant: ['tabular-nums'],
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  modSub: {
-    fontFamily: FONT_SANS,
-    fontSize: 12,
-    marginTop: 2,
-  },
-  modDetailTitle: {
-    fontFamily: FONT_SANS,
-    fontSize: 20,
-    fontWeight: '700',
-    letterSpacing: -0.4,
-    marginTop: 4,
-  },
-  modDetailSub: {
-    fontFamily: FONT_SANS,
-    fontSize: 13,
-    marginTop: 4,
-    marginBottom: 16,
-  },
-  primaryBtn: {
-    height: 48, // h-12
-    borderRadius: 16, // rounded-2xl
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primaryBtnText: {
-    fontFamily: FONT_SANS,
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-});

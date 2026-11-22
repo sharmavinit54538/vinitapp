@@ -143,14 +143,6 @@ export function VisitorDashboardModule({
             <option value="Auditor">Auditor</option>
             <option value="VIP">VIP</option>
           </select>
-          <button
-            type="button"
-            onClick={() => void loadDashboard()}
-            className="h-9 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold inline-flex items-center gap-1.5"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>Sync Live</span>
-          </button>
         </div>
       </div>
 

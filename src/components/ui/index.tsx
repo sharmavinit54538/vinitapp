@@ -17,23 +17,23 @@ export function Button({
 }: ButtonProps) {
   const variantClasses: Record<NonNullable<ButtonProps['variant']>, string> = {
     primary:
-      'bg-indigo-600 text-white hover:bg-indigo-700 shadow-xs disabled:opacity-50',
+      'bg-[#0A66C2] text-white hover:bg-[#004182] disabled:opacity-50',
     secondary:
-      'bg-slate-900 text-white hover:bg-slate-800 shadow-xs disabled:opacity-50',
+      'bg-[#171717] text-white hover:bg-[#333333] disabled:opacity-50',
     outline:
-      'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50',
-    ghost: 'text-slate-600 hover:bg-slate-100 disabled:opacity-50',
+      'border border-[#E5E7EB] bg-white text-[#171717] hover:bg-[#F3F2EF] disabled:opacity-50',
+    ghost: 'text-[#404040] hover:bg-[#F3F2EF] disabled:opacity-50',
   };
 
   const sizeClasses: Record<NonNullable<ButtonProps['size']>, string> = {
-    sm: 'h-8 px-3 text-xs rounded-xl',
-    md: 'h-10 px-4 text-xs rounded-xl',
-    lg: 'h-11 px-5 text-sm rounded-xl',
+    sm: 'h-9 px-3 text-xs rounded-md',
+    md: 'h-10 px-4 text-sm rounded-md',
+    lg: 'h-11 px-5 text-sm rounded-lg',
   };
 
   return (
     <button
-      className={`inline-flex items-center justify-center gap-2 font-semibold transition-all cursor-pointer disabled:cursor-not-allowed ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 font-semibold transition-colors cursor-pointer disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-[#0A66C2] ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
       {...props}
     >
       {children}
@@ -50,15 +50,15 @@ export function Input({ error, className = '', ...props }: InputProps) {
   return (
     <div className="w-full">
       <input
-        className={`h-10 w-full rounded-xl border bg-white px-3.5 text-xs text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:outline-none ${
+        className={`h-10 w-full rounded-md border bg-white px-3 text-sm text-[#171717] placeholder:text-[#666666] focus:outline-none focus:ring-2 ${
           error
-            ? 'border-rose-300 focus:border-rose-500 focus:ring-rose-500/15'
-            : 'border-slate-200 focus:border-indigo-600 focus:ring-indigo-600/15'
+            ? 'border-red-300 focus:border-red-600 focus:ring-red-600/15'
+            : 'border-[#E5E7EB] focus:border-[#0A66C2] focus:ring-[#0A66C2]/15'
         } ${className}`}
         {...props}
       />
       {error ? (
-        <p className="mt-1 text-[11px] font-medium text-rose-600">{error}</p>
+        <p className="mt-1 text-xs font-medium text-[#B91C1C]">{error}</p>
       ) : null}
     </div>
   );
@@ -78,10 +78,10 @@ export function Label({
   return (
     <label
       htmlFor={htmlFor}
-      className={`mb-1.5 block text-xs font-semibold text-slate-700 ${className}`}
+      className={`mb-1.5 block text-xs font-semibold text-[#171717] ${className}`}
     >
       {children}
-      {required ? <span className="ml-0.5 text-rose-600">*</span> : null}
+      {required ? <span className="ml-0.5 text-[#B91C1C]">*</span> : null}
     </label>
   );
 }
@@ -95,7 +95,7 @@ export function Card({
 }) {
   return (
     <div
-      className={`rounded-2xl border border-slate-200 bg-white p-5 shadow-xs ${className}`}
+      className={`rounded-lg border border-[#E5E7EB] bg-white p-4 ${className}`}
     >
       {children}
     </div>
@@ -116,13 +116,13 @@ export function Switch({
   description?: string;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-[#E5E7EB] bg-white p-3">
       <div>
         {label ? (
-          <p className="text-xs font-semibold text-slate-900">{label}</p>
+          <p className="text-sm font-medium text-[#171717]">{label}</p>
         ) : null}
         {description ? (
-          <p className="text-[11px] text-slate-500">{description}</p>
+          <p className="text-xs text-[#666666]">{description}</p>
         ) : null}
       </div>
       <button
@@ -133,11 +133,11 @@ export function Switch({
         aria-label={label || 'Toggle switch'}
         onClick={() => onCheckedChange(!checked)}
         className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
-          checked ? 'bg-indigo-600' : 'bg-slate-300'
+          checked ? 'bg-[#0A66C2]' : 'bg-[#D1D5DB]'
         }`}
       >
         <span
-          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs transition ${
+          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white transition ${
             checked ? 'translate-x-5' : 'translate-x-0'
           }`}
         />

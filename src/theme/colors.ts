@@ -9,6 +9,7 @@ export interface NativePalette {
   textPrimary: string;
   textSecondary: string;
   textMuted: string;
+  iconColor: string;
   primary: string;
   primaryLight: string;
   primaryText: string;
@@ -29,69 +30,72 @@ export interface NativePalette {
   handleBar: string;
 }
 
-export const FONT_SANS = 'var(--font-sans), "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif';
-export const FONT_MONO = 'var(--font-mono), "JetBrains Mono", monospace';
+export const FONT_SANS = 'var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+// Strictly use Inter with tabular-nums rather than stylized monospace numeric fonts
+export const FONT_MONO = 'var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
 export const LIGHT_PALETTE: NativePalette = {
-  background: '#F8FAFC', // slate-50
-  surface: '#FFFFFF', // white
-  surfaceMuted: '#F1F5F9', // slate-100/90
+  background: '#F3F2EF', // LinkedIn warm neutral section separator
+  surface: '#FFFFFF', // Pure white primary surface
+  surfaceMuted: '#F3F2EF', // Light neutral container bg
   surfaceElevated: '#FFFFFF',
-  inputBg: '#F8FAFC', // slate-50
-  border: '#E2E8F0', // slate-200/80
-  borderSubtle: '#F1F5F9', // slate-100
-  textPrimary: '#0F172A', // slate-900
-  textSecondary: '#475569', // slate-600
-  textMuted: '#64748B', // slate-500
-  primary: '#4F46E5', // indigo-600
-  primaryLight: '#EEF2FF', // indigo-50
+  inputBg: '#F3F2EF',
+  border: '#E5E7EB', // Thin crisp border
+  borderSubtle: '#E5E7EB',
+  textPrimary: '#171717', // Crisp near-black
+  textSecondary: '#404040', // Icon & secondary dark neutral
+  textMuted: '#666666', // LinkedIn muted secondary text
+  iconColor: '#404040',
+  primary: '#0A66C2', // LinkedIn primary action blue
+  primaryLight: '#EBF4FD',
   primaryText: '#FFFFFF',
-  secondaryCta: '#0F172A', // slate-900
-  emerald: '#059669',
-  emeraldBg: '#ECFDF5',
-  amber: '#D97706',
+  secondaryCta: '#171717',
+  emerald: '#15803D', // Semantic success green
+  emeraldBg: '#F0FDF4',
+  amber: '#B45309', // Semantic warning amber
   amberBg: '#FFFBEB',
-  rose: '#E11D48',
-  roseBg: '#FFF1F2',
-  violet: '#7C3AED',
-  violetBg: '#F5F3FF',
-  sky: '#0284C7',
-  skyBg: '#F0F9FF',
-  tabBarBg: 'rgba(255, 255, 255, 0.94)',
-  headerBg: 'rgba(255, 255, 255, 0.90)',
-  overlay: 'rgba(2, 6, 23, 0.60)', // slate-950/60
-  handleBar: '#E2E8F0', // slate-200
+  rose: '#B91C1C', // Semantic error red
+  roseBg: '#FEF2F2',
+  violet: '#0A66C2', // Replace purple with LinkedIn primary blue
+  violetBg: '#EBF4FD',
+  sky: '#0A66C2',
+  skyBg: '#EBF4FD',
+  tabBarBg: '#FFFFFF',
+  headerBg: '#FFFFFF',
+  overlay: 'rgba(23, 23, 23, 0.50)',
+  handleBar: '#D4D4D8',
 };
 
 export const DARK_PALETTE: NativePalette = {
-  background: '#020617', // slate-950
-  surface: '#0F172A', // slate-900
-  surfaceMuted: '#1E293B', // slate-800/80
-  surfaceElevated: '#1E293B',
-  inputBg: '#1E293B', // slate-800
-  border: '#1E293B', // slate-800
-  borderSubtle: '#1E293B',
-  textPrimary: '#FFFFFF',
-  textSecondary: '#CBD5E1', // slate-300
-  textMuted: '#94A3B8', // slate-400
-  primary: '#4F46E5', // indigo-600
-  primaryLight: 'rgba(79, 70, 229, 0.18)',
+  background: '#0A0A0A',
+  surface: '#171717',
+  surfaceMuted: '#262626',
+  surfaceElevated: '#262626',
+  inputBg: '#262626',
+  border: '#2E2E2E',
+  borderSubtle: '#262626',
+  textPrimary: '#FAFAFA',
+  textSecondary: '#D4D4D4',
+  textMuted: '#A3A3A3',
+  iconColor: '#D4D4D4',
+  primary: '#3B82F6',
+  primaryLight: 'rgba(59, 130, 246, 0.16)',
   primaryText: '#FFFFFF',
-  secondaryCta: '#1E293B', // slate-800
-  emerald: '#10B981',
-  emeraldBg: 'rgba(16, 185, 129, 0.14)',
+  secondaryCta: '#262626',
+  emerald: '#22C55E',
+  emeraldBg: 'rgba(34, 197, 94, 0.14)',
   amber: '#F59E0B',
   amberBg: 'rgba(245, 158, 11, 0.14)',
-  rose: '#F43F5E',
-  roseBg: 'rgba(244, 63, 94, 0.14)',
-  violet: '#8B5CF6',
-  violetBg: 'rgba(139, 92, 246, 0.14)',
+  rose: '#EF4444',
+  roseBg: 'rgba(239, 68, 68, 0.14)',
+  violet: '#3B82F6',
+  violetBg: 'rgba(59, 130, 246, 0.14)',
   sky: '#38BDF8',
   skyBg: 'rgba(56, 189, 248, 0.14)',
-  tabBarBg: 'rgba(15, 23, 42, 0.94)',
-  headerBg: 'rgba(15, 23, 42, 0.90)',
-  overlay: 'rgba(2, 6, 23, 0.72)',
-  handleBar: '#334155', // slate-700
+  tabBarBg: '#171717',
+  headerBg: '#171717',
+  overlay: 'rgba(0, 0, 0, 0.72)',
+  handleBar: '#404040',
 };
 
 export function getPalette(isDark: boolean): NativePalette {

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { PayrollAnalyticsDashboard } from '@/components/payroll-analytics/payroll-analytics-dashboard';
 import { SettingsWorkspaceShell } from '@/src/components/settings/SettingsWorkspaceShell';
+import { EmployeeDocumentsWorkspaceShell } from '@/src/components/documents/EmployeeDocumentsWorkspaceShell';
 import {
   HrDashboardDataState,
   ApprovalCategory,
@@ -3517,91 +3518,7 @@ export function MoreModulesScreen({
 
           {/* 9A. EMPLOYEE DOCUMENTS WORKSPACE */}
           {activeSubModule === 'employee_documents' && (
-            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 space-y-4">
-              <div>
-                <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Employee KYC &amp; Document Vault ({empDocs.length} Records)
-                </h4>
-                <p className="text-xs text-slate-500">
-                  Upload, verify, and audit employee contracts, identity proofs, and letters
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <input
-                  type="text"
-                  value={newDocEmp}
-                  onChange={(e) => setNewDocEmp(e.target.value)}
-                  placeholder="Employee name & ID"
-                  className="h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs"
-                />
-                <input
-                  type="text"
-                  value={newDocTitle}
-                  onChange={(e) => setNewDocTitle(e.target.value)}
-                  placeholder="Document title (e.g. PAN / Tax Declaration)"
-                  className="h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!newDocEmp.trim() || !newDocTitle.trim()) return;
-                    setEmpDocs((prev) => [
-                      {
-                        id: `EDOC-${100 + prev.length + 1}`,
-                        employee: newDocEmp.trim(),
-                        title: newDocTitle.trim(),
-                        category: 'KYC / Verification',
-                        expiry: 'Permanent',
-                        status: 'Verified',
-                      },
-                      ...prev,
-                    ]);
-                    setNewDocEmp('');
-                    setNewDocTitle('');
-                    onSuccessToast('Employee document added and verified.');
-                  }}
-                  className="h-9 px-4 rounded-xl bg-indigo-600 text-white text-xs font-semibold cursor-pointer"
-                >
-                  Add Document
-                </button>
-              </div>
-
-              <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                {empDocs.map((doc) => (
-                  <div
-                    key={doc.id}
-                    className="py-3 flex flex-wrap items-center justify-between gap-3 text-xs"
-                  >
-                    <div>
-                      <span className="font-mono text-[11px] text-indigo-600 dark:text-indigo-400">
-                        {doc.id} · {doc.category} · {doc.status}
-                      </span>
-                      <p className="text-sm font-bold text-slate-900 dark:text-white">
-                        {doc.title}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        Employee: {doc.employee} · Validity: {doc.expiry}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEmpDocs((prev) =>
-                          prev.map((d) =>
-                            d.id === doc.id ? { ...d, status: 'Verified' } : d
-                          )
-                        );
-                        onSuccessToast(`Verified ${doc.id} (${doc.title}).`);
-                      }}
-                      className="min-h-[34px] px-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-800 dark:text-slate-200 cursor-pointer"
-                    >
-                      {doc.status === 'Verified' ? 'Verified ✓' : 'Verify Document'}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <EmployeeDocumentsWorkspaceShell embedded />
           )}
 
           {/* 9B. DOCUMENTS & POLICIES WORKSPACE */}

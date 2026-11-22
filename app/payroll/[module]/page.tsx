@@ -8,6 +8,7 @@ import {
   PAYROLL_MODULES_REGISTRY,
 } from '@/src/components/payroll/PayrollWorkspaceShell';
 import { PayrollModuleId } from '@/src/types/payroll';
+import { RoleRouteGuard } from '@/components/auth/role-route-guard';
 
 export default function PayrollDynamicModulePage({
   params,
@@ -21,8 +22,10 @@ export default function PayrollDynamicModulePage({
   )?.id as PayrollModuleId | undefined;
 
   return (
-    <Provider store={store}>
-      <PayrollWorkspaceShell initialModule={validModule || 'dashboard'} />
-    </Provider>
+    <RoleRouteGuard routePath={`/payroll/${validModule || resolved.module || 'dashboard'}`}>
+      <Provider store={store}>
+        <PayrollWorkspaceShell initialModule={validModule || 'dashboard'} />
+      </Provider>
+    </RoleRouteGuard>
   );
 }

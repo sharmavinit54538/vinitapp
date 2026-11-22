@@ -338,64 +338,61 @@ export function HelpDeskShell({
         {/* 2. MOBILE APP BODY: GROUPED CARD DIRECTORY OR ACTIVE MODULE */}
         <main
           className={
-            embedded
-              ? 'space-y-3.5'
-              : 'flex-1 overflow-y-auto px-3.5 py-4 space-y-4 pb-20'
+            showDirectory
+              ? 'w-full p-0 m-0'
+              : embedded
+                ? 'space-y-3.5 p-4'
+                : 'flex-1 overflow-y-auto px-3.5 py-4 space-y-4 pb-20'
           }
         >
           {showDirectory ? (
-            <div className="space-y-3.5" data-testid="helpdesk-mobile-directory">
+            <div data-testid="helpdesk-mobile-directory" className="w-full p-0 m-0">
               {filteredGroups.length === 0 ? (
-                <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-8 text-center shadow-xs">
-                  <p className="text-sm font-semibold text-slate-700">
+                <div className="bg-white p-8 text-center">
+                  <p className="text-sm font-semibold text-zinc-700">
                     No modules found matching &ldquo;{searchQuery}&rdquo;
                   </p>
                   <button
                     type="button"
                     onClick={() => setSearchQuery('')}
-                    className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:underline cursor-pointer"
+                    className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-zinc-950 hover:underline cursor-pointer"
                   >
                     Clear Search
                   </button>
                 </div>
               ) : (
-                filteredGroups.map((group) => (
-                <div
-                  key={group.title}
-                  className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xs"
-                >
-                  <div className="divide-y divide-slate-100">
-                    {group.items.map((mod) => {
-                      const IconComp = mod.Icon;
+                <div className="w-full bg-white divide-y divide-zinc-100">
+                  {filteredGroups
+                    .flatMap((group) => group.items)
+                    .map((mod) => {
                       const isCurrent = activeNavId === mod.id;
                       return (
                         <button
                           key={mod.id}
                           type="button"
                           onClick={() => handleModuleTap(mod.id)}
-                          className="flex w-full items-center gap-3.5 px-4 py-3 text-left transition-colors hover:bg-slate-50 cursor-pointer"
+                          className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors hover:bg-zinc-100/70 cursor-pointer"
                         >
-                          <div
-                            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${mod.iconBg} ${mod.iconColor}`}
-                          >
-                            <IconComp className="h-5 w-5" />
-                          </div>
-                          <div className="flex min-w-0 items-center gap-2">
-                            <p className="truncate text-sm font-bold text-slate-900">
-                              {mod.title}
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="truncate text-[14px] font-semibold text-zinc-950">
+                                {mod.title}
+                              </p>
+                              {isCurrent && (
+                                <span className="rounded-md bg-zinc-100 px-2 py-0.5 text-[9px] font-bold text-zinc-900 uppercase">
+                                  Active
+                                </span>
+                              )}
+                            </div>
+                            <p className="truncate text-[12px] font-normal text-zinc-500 mt-0.5">
+                              {mod.subtitle}
                             </p>
-                            {isCurrent && (
-                              <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[9px] font-bold text-indigo-600 uppercase">
-                                Active
-                              </span>
-                            )}
                           </div>
                         </button>
                       );
                     })}
-                  </div>
                 </div>
-              )))}
+              )}
             </div>
           ) : (
             <div className="space-y-4">{children}</div>

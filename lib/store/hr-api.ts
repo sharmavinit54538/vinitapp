@@ -11,6 +11,7 @@ import {
   FaceAttendanceLogItem,
 } from '@/lib/hr-dashboard-logic';
 import { authClient, API_BASE_URL } from '@/lib/auth-api';
+import { localMockFetch } from '@/src/services/local-mock-engine';
 
 const HR_API_BASE = `${API_BASE_URL}/api/v1/hr`;
 
@@ -18,6 +19,7 @@ export const hrDashboardApi = createApi({
   reducerPath: 'hrDashboardApi',
   baseQuery: fetchBaseQuery({
     baseUrl: HR_API_BASE,
+    fetchFn: localMockFetch,
     prepareHeaders: (headers) => {
       const token = authClient.getAccessToken();
       if (token) {

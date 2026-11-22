@@ -68,9 +68,12 @@ export const ROLE_ROUTES: Record<Ofc360Role, RoleRouteMetadata> = {
 
 export function resolveRoleDashboardPath(rawRole?: string | null): string {
   if (!rawRole) return ROLE_ROUTES.employee.path;
-  const normalized = rawRole.trim().toLowerCase().replace(/[\s-]+/g, '_') as Ofc360Role;
+  const normalized = rawRole.trim().toLowerCase().replace(/[\s-]+/g, '_');
+  if (normalized === 'ceo' || normalized === 'cfo' || normalized === 'coo' || normalized === 'cto') {
+    return ROLE_ROUTES.executive.path;
+  }
   if (normalized in ROLE_ROUTES) {
-    return ROLE_ROUTES[normalized].path;
+    return ROLE_ROUTES[normalized as Ofc360Role].path;
   }
   return ROLE_ROUTES.employee.path;
 }

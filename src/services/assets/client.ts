@@ -1,4 +1,5 @@
 import { API_BASE_URL, authClient } from '../../../lib/auth-api';
+import { localMockFetch } from '../local-mock-engine';
 
 export interface AssetApiErrorPayload {
   code: string;
@@ -83,7 +84,7 @@ export class AssetHttpClient {
   constructor(baseUrl?: string, fetchImpl?: typeof fetch) {
     const defaultBase = `${API_BASE_URL.replace(/\/+$/, '')}/api/v1/assets`;
     this.baseUrl = (baseUrl || defaultBase).replace(/\/$/, '');
-    this.fetchImpl = fetchImpl || fetch.bind(globalThis);
+    this.fetchImpl = fetchImpl || localMockFetch;
   }
 
   private buildHeaders(

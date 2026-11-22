@@ -8,13 +8,15 @@ import { Building2, Users, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { makeHrStore } from '@/lib/store';
 import { EmployeesTable } from '@/src/features/admin/employees/components/EmployeesTable';
 import { DepartmentsDirectoryTab } from '@/src/features/admin/departments/components/DepartmentsDirectoryTab';
+import { RoleRouteGuard } from '@/components/auth/role-route-guard';
 
 export default function AdminWorkforcePage() {
   const store = useMemo(() => makeHrStore(), []);
   const [activeTab, setActiveTab] = useState<'employees' | 'departments'>('employees');
 
   return (
-    <Provider store={store}>
+    <RoleRouteGuard routePath="/admin/workforce">
+      <Provider store={store}>
       <Toaster position="top-right" richColors />
       <div className="min-h-screen bg-slate-50 text-slate-900">
         <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
@@ -90,6 +92,7 @@ export default function AdminWorkforcePage() {
           </div>
         </main>
       </div>
-    </Provider>
+      </Provider>
+    </RoleRouteGuard>
   );
 }

@@ -1,15 +1,7 @@
+'use client';
+
 import React, { useState } from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-} from 'react-native';
 import { X } from 'lucide-react';
-import { getPalette, FONT_SANS, FONT_MONO } from '../theme/colors';
 import {
   useAddWorkforceEmployeeMutation,
   usePublishAnnouncementMutation,
@@ -48,11 +40,9 @@ const SHIFTS = [
 
 export function AddEmployeeModal({
   visible,
-  isDark,
   onClose,
   onSuccessToast,
 }: AddEmployeeModalProps) {
-  const palette = getPalette(isDark);
   const [addEmployee, { isLoading }] = useAddWorkforceEmployeeMutation();
 
   const [name, setName] = useState('');
@@ -65,7 +55,10 @@ export function AddEmployeeModal({
   const [shift, setShift] = useState(SHIFTS[0]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const handleSave = async () => {
+  if (!visible) return null;
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
     setErrorMsg(null);
     const parsed = addEmployeeFormSchema.safeParse({
       name,
@@ -79,14 +72,17 @@ export function AddEmployeeModal({
     });
 
     if (!parsed.success) {
-      const firstErr = parsed.error.issues[0]?.message || 'Please check all required fields.';
+      const firstErr =
+        parsed.error.issues[0]?.message || 'Please check all required fields.';
       setErrorMsg(firstErr);
       return;
     }
 
     try {
       await addEmployee(parsed.data).unwrap();
-      onSuccessToast(`${parsed.data.name} (${parsed.data.role}) onboarded to ${parsed.data.department}`);
+      onSuccessToast(
+        `${parsed.data.name} (${parsed.data.role}) onboarded to ${parsed.data.department}`
+      );
       setName('');
       setEmail('');
       setPhone('');
@@ -99,259 +95,200 @@ export function AddEmployeeModal({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={[styles.backdrop, { backgroundColor: palette.overlay }]}>
-        <View style={[styles.sheet, { backgroundColor: palette.surface, borderColor: palette.border }]}>
-          <View style={styles.handleWrap}>
-            <View style={[styles.handleBar, { backgroundColor: palette.handleBar }]} />
-          </View>
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Onboard workforce employee"
+      className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/45 md:p-4"
+      onClick={onClose}
+    >
+      <form
+        onSubmit={handleSave}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-[540px] bg-white rounded-t-lg md:rounded-lg border border-[#E5E7EB] overflow-hidden max-h-[90vh] flex flex-col"
+      >
+        <div className="flex items-center justify-between border-b border-[#E5E7EB] px-4 h-14 shrink-0">
+          <div>
+            <h2 className="text-[16px] font-semibold text-[#171717]">
+              Add employee
+            </h2>
+            <p className="text-[12px] text-[#666666]">
+              Create a new employee profile in OFC360
+            </p>
+          </div>
+          <button
+            type="button"
+            aria-label="Close add employee dialog"
+            onClick={onClose}
+            className="flex h-9 w-9 items-center justify-center rounded-md text-[#404040] hover:bg-[#F3F2EF] cursor-pointer"
+          >
+            <X className="h-4 w-4" strokeWidth={2} />
+          </button>
+        </div>
 
-          <View style={[styles.headerRow, { borderBottomColor: palette.border }]}>
-            <View style={styles.headerTextWrap}>
-              <Text style={[styles.sheetTitle, { color: palette.textPrimary }]}>
-                Onboard Workforce Employee
-              </Text>
-              <Text style={[styles.sheetSubtitle, { color: palette.textMuted }]}>
-                Create a new employee profile in OFC360 Directory
-              </Text>
-            </View>
-            <Pressable
-              onPress={onClose}
-              style={[styles.closeBtn, { backgroundColor: palette.surfaceMuted }]}
+        <div className="overflow-y-auto px-4 py-4 space-y-3.5">
+          {errorMsg ? (
+            <div
+              role="alert"
+              className="rounded-md border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-[12px] font-medium text-[#B91C1C]"
             >
-              <X size={16} color={palette.textSecondary} strokeWidth={2.3} />
-            </Pressable>
-          </View>
+              {errorMsg}
+            </div>
+          ) : null}
 
-          <ScrollView style={styles.formBody} showsVerticalScrollIndicator={false}>
-            {errorMsg ? (
-              <View style={[styles.errorBox, { backgroundColor: palette.roseBg, borderColor: palette.rose }]}>
-                <Text style={[styles.errorText, { color: palette.rose }]}>{errorMsg}</Text>
-              </View>
-            ) : null}
-
-            <Text style={[styles.label, { color: palette.textSecondary }]}>Full Name *</Text>
-            <TextInput
+          <div>
+            <label htmlFor="add-emp-name" className="block text-[12px] font-medium text-[#404040] mb-1">
+              Full name *
+            </label>
+            <input
+              id="add-emp-name"
+              type="text"
               value={name}
-              onChangeText={setName}
-              placeholder="e.g., Rohan Verma"
-              placeholderTextColor={palette.textMuted}
-              style={[
-                styles.input,
-                {
-                  backgroundColor: palette.inputBg,
-                  borderColor: palette.border,
-                  color: palette.textPrimary,
-                },
-              ]}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter full name"
+              className="h-10 w-full rounded-md border border-[#E5E7EB] px-3 text-[13px] text-[#171717] placeholder:text-[#666666] focus:border-[#0A66C2] focus:outline-none"
             />
+          </div>
 
-            <Text style={[styles.label, { color: palette.textSecondary }]}>Work Email *</Text>
-            <TextInput
+          <div>
+            <label htmlFor="add-emp-email" className="block text-[12px] font-medium text-[#404040] mb-1">
+              Work email *
+            </label>
+            <input
+              id="add-emp-email"
+              type="email"
               value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              placeholder="rohan.verma@ofc360.com"
-              placeholderTextColor={palette.textMuted}
-              style={[
-                styles.input,
-                {
-                  backgroundColor: palette.inputBg,
-                  borderColor: palette.border,
-                  color: palette.textPrimary,
-                },
-              ]}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="name@company.com"
+              className="h-10 w-full rounded-md border border-[#E5E7EB] px-3 text-[13px] text-[#171717] placeholder:text-[#666666] focus:border-[#0A66C2] focus:outline-none"
             />
+          </div>
 
-            <View style={styles.twoCol}>
-              <View style={styles.colItem}>
-                <Text style={[styles.label, { color: palette.textSecondary }]}>Mobile Phone *</Text>
-                <TextInput
-                  value={phone}
-                  onChangeText={setPhone}
-                  keyboardType="phone-pad"
-                  placeholder="+91 98201 11223"
-                  placeholderTextColor={palette.textMuted}
-                  style={[
-                    styles.monoInput,
-                    {
-                      backgroundColor: palette.inputBg,
-                      borderColor: palette.border,
-                      color: palette.textPrimary,
-                    },
-                  ]}
-                />
-              </View>
-              <View style={styles.colItem}>
-                <Text style={[styles.label, { color: palette.textSecondary }]}>Designation *</Text>
-                <TextInput
-                  value={designation}
-                  onChangeText={setDesignation}
-                  placeholder="Senior Engineer"
-                  placeholderTextColor={palette.textMuted}
-                  style={[
-                    styles.input,
-                    {
-                      backgroundColor: palette.inputBg,
-                      borderColor: palette.border,
-                      color: palette.textPrimary,
-                    },
-                  ]}
-                />
-              </View>
-            </View>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="add-emp-phone" className="block text-[12px] font-medium text-[#404040] mb-1">
+                Mobile phone *
+              </label>
+              <input
+                id="add-emp-phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+91 98201 11223"
+                className="h-10 w-full rounded-md border border-[#E5E7EB] px-3 text-[13px] text-[#171717] tabular-nums placeholder:text-[#666666] focus:border-[#0A66C2] focus:outline-none"
+              />
+            </div>
+            <div>
+              <label htmlFor="add-emp-designation" className="block text-[12px] font-medium text-[#404040] mb-1">
+                Designation *
+              </label>
+              <input
+                id="add-emp-designation"
+                type="text"
+                value={designation}
+                onChange={(e) => setDesignation(e.target.value)}
+                placeholder="Senior Engineer"
+                className="h-10 w-full rounded-md border border-[#E5E7EB] px-3 text-[13px] text-[#171717] placeholder:text-[#666666] focus:border-[#0A66C2] focus:outline-none"
+              />
+            </div>
+          </div>
 
-            <Text style={[styles.label, { color: palette.textSecondary }]}>Role *</Text>
-            <View
-              style={[
-                styles.segmentedWrap,
-                { backgroundColor: palette.surfaceMuted, borderColor: palette.border },
-              ]}
-            >
+          <div>
+            <span className="block text-[12px] font-medium text-[#404040] mb-1.5">
+              Role *
+            </span>
+            <div className="flex flex-wrap gap-2">
               {WORKFORCE_EMPLOYEE_ROLES.map((r) => {
                 const active = role === r;
                 return (
-                  <Pressable
+                  <button
                     key={r}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Role ${r}`}
-                    onPress={() => setRole(r)}
-                    style={[
-                      styles.chip,
+                    type="button"
+                    aria-label={`Role ${r}`}
+                    onClick={() => setRole(r)}
+                    className={`h-9 rounded-md border px-3 text-[12px] font-medium transition-colors cursor-pointer ${
                       active
-                        ? {
-                            backgroundColor: palette.surface,
-                            borderColor: palette.border,
-                            borderWidth: 1,
-                          }
-                        : null,
-                    ]}
+                        ? 'border-[#0A66C2] bg-[#EFF6FF] text-[#0A66C2] font-semibold'
+                        : 'border-[#E5E7EB] bg-white text-[#666666] hover:bg-[#F3F2EF]'
+                    }`}
                   >
-                    <Text
-                      style={[
-                        styles.chipText,
-                        { color: active ? palette.primary : palette.textSecondary },
-                      ]}
-                    >
-                      {r}
-                    </Text>
-                  </Pressable>
+                    {r}
+                  </button>
                 );
               })}
-            </View>
+            </div>
+          </div>
 
-            <Text style={[styles.label, { color: palette.textSecondary }]}>Department</Text>
-            <View
-              style={[
-                styles.segmentedWrap,
-                { backgroundColor: palette.surfaceMuted, borderColor: palette.border },
-              ]}
-            >
-              {DEPARTMENTS.map((dept) => {
-                const active = department === dept;
-                return (
-                  <Pressable
-                    key={dept}
-                    onPress={() => setDepartment(dept)}
-                    style={[
-                      styles.chip,
-                      active
-                        ? {
-                            backgroundColor: palette.surface,
-                            borderColor: palette.border,
-                            borderWidth: 1,
-                          }
-                        : null,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.chipText,
-                        { color: active ? palette.primary : palette.textSecondary },
-                      ]}
-                    >
-                      {dept}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="add-emp-dept" className="block text-[12px] font-medium text-[#404040] mb-1">
+                Department
+              </label>
+              <select
+                id="add-emp-dept"
+                value={department}
+                onChange={(e) => setDepartment(e.target.value)}
+                className="h-10 w-full rounded-md border border-[#E5E7EB] bg-white px-3 text-[13px] text-[#171717] focus:border-[#0A66C2] focus:outline-none"
+              >
+                {DEPARTMENTS.map((dept) => (
+                  <option key={dept} value={dept}>
+                    {dept}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="add-emp-shift" className="block text-[12px] font-medium text-[#404040] mb-1">
+                Assigned shift
+              </label>
+              <select
+                id="add-emp-shift"
+                value={shift}
+                onChange={(e) => setShift(e.target.value)}
+                className="h-10 w-full rounded-md border border-[#E5E7EB] bg-white px-3 text-[13px] text-[#171717] focus:border-[#0A66C2] focus:outline-none"
+              >
+                {SHIFTS.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
 
-            <Text style={[styles.label, { color: palette.textSecondary }]}>Office Location *</Text>
-            <TextInput
+          <div>
+            <label htmlFor="add-emp-location" className="block text-[12px] font-medium text-[#404040] mb-1">
+              Office location *
+            </label>
+            <input
+              id="add-emp-location"
+              type="text"
               value={location}
-              onChangeText={setLocation}
+              onChange={(e) => setLocation(e.target.value)}
               placeholder="Bengaluru · Global HQ"
-              placeholderTextColor={palette.textMuted}
-              style={[
-                styles.input,
-                {
-                  backgroundColor: palette.inputBg,
-                  borderColor: palette.border,
-                  color: palette.textPrimary,
-                },
-              ]}
+              className="h-10 w-full rounded-md border border-[#E5E7EB] px-3 text-[13px] text-[#171717] placeholder:text-[#666666] focus:border-[#0A66C2] focus:outline-none"
             />
+          </div>
+        </div>
 
-            <Text style={[styles.label, { color: palette.textSecondary }]}>Assigned Shift</Text>
-            <View
-              style={[
-                styles.segmentedWrap,
-                { backgroundColor: palette.surfaceMuted, borderColor: palette.border },
-              ]}
-            >
-              {SHIFTS.map((s) => {
-                const active = shift === s;
-                return (
-                  <Pressable
-                    key={s}
-                    onPress={() => setShift(s)}
-                    style={[
-                      styles.chip,
-                      active
-                        ? {
-                            backgroundColor: palette.surface,
-                            borderColor: palette.border,
-                            borderWidth: 1,
-                          }
-                        : null,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.chipText,
-                        { color: active ? palette.primary : palette.textSecondary },
-                      ]}
-                    >
-                      {s}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </ScrollView>
-
-          <View style={[styles.footerRow, { borderTopColor: palette.border }]}>
-            <Pressable
-              onPress={onClose}
-              style={[styles.secondaryBtn, { borderColor: palette.border, backgroundColor: palette.inputBg }]}
-            >
-              <Text style={[styles.secondaryBtnText, { color: palette.textSecondary }]}>Cancel</Text>
-            </Pressable>
-            <Pressable
-              onPress={handleSave}
-              disabled={isLoading}
-              style={[styles.primaryBtn, { backgroundColor: palette.primary }]}
-            >
-              <Text style={styles.primaryBtnText}>
-                {isLoading ? 'Onboarding...' : 'Add Employee'}
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-      </View>
-    </Modal>
+        <div className="flex items-center justify-end gap-2 border-t border-[#E5E7EB] px-4 py-3 shrink-0">
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-9 rounded-md border border-[#E5E7EB] bg-white px-4 text-[13px] font-medium text-[#171717] hover:bg-[#F3F2EF] cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="h-9 rounded-md bg-[#0A66C2] px-4 text-[13px] font-semibold text-white hover:bg-[#004182] disabled:opacity-50 cursor-pointer"
+          >
+            {isLoading ? 'Onboarding...' : 'Add employee'}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 }
 
@@ -374,23 +311,27 @@ const PRIORITIES: AnnouncementPriority[] = ['Normal', 'High', 'Urgent'];
 
 export function AnnouncementModal({
   visible,
-  isDark,
   onClose,
   onSuccessToast,
 }: AnnouncementModalProps) {
-  const palette = getPalette(isDark);
   const [publishAnnouncement, { isLoading }] = usePublishAnnouncementMutation();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<AnnouncementPriority>('High');
-  const [category, setCategory] = useState<AnnouncementItem['category']>('Company News');
+  const [category, setCategory] =
+    useState<AnnouncementItem['category']>('Company News');
   const [department, setDepartment] = useState('All Departments');
   const [targetAudience, setTargetAudience] = useState('All Employees');
-  const [expiryDate, setExpiryDate] = useState('2026-12-31');
+  const [expiryDate, setExpiryDate] = useState(
+    `${new Date().getFullYear()}-12-31`
+  );
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const handlePublish = async () => {
+  if (!visible) return null;
+
+  const handlePublish = async (e: React.FormEvent) => {
+    e.preventDefault();
     setErrorMsg(null);
     const parsed = announcementFormSchema.safeParse({
       title,
@@ -403,7 +344,9 @@ export function AnnouncementModal({
     });
 
     if (!parsed.success) {
-      setErrorMsg(parsed.error.issues[0]?.message || 'Please check announcement fields.');
+      setErrorMsg(
+        parsed.error.issues[0]?.message || 'Please check announcement fields.'
+      );
       return;
     }
 
@@ -412,7 +355,7 @@ export function AnnouncementModal({
         ...parsed.data,
         status: 'Published',
       }).unwrap();
-      onSuccessToast('Enterprise announcement broadcasted');
+      onSuccessToast('Notice published');
       setTitle('');
       setDescription('');
       onClose();
@@ -422,387 +365,181 @@ export function AnnouncementModal({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={[styles.backdrop, { backgroundColor: palette.overlay }]}>
-        <View style={[styles.sheet, { backgroundColor: palette.surface, borderColor: palette.border }]}>
-          <View style={styles.handleWrap}>
-            <View style={[styles.handleBar, { backgroundColor: palette.handleBar }]} />
-          </View>
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Broadcast enterprise notice"
+      className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/45 md:p-4"
+      onClick={onClose}
+    >
+      <form
+        onSubmit={handlePublish}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-[540px] bg-white rounded-t-lg md:rounded-lg border border-[#E5E7EB] overflow-hidden max-h-[90vh] flex flex-col"
+      >
+        <div className="flex items-center justify-between border-b border-[#E5E7EB] px-4 h-14 shrink-0">
+          <div>
+            <h2 className="text-[16px] font-semibold text-[#171717]">
+              Broadcast notice
+            </h2>
+            <p className="text-[12px] text-[#666666]">
+              Send an official update to employees
+            </p>
+          </div>
+          <button
+            type="button"
+            aria-label="Close notice dialog"
+            onClick={onClose}
+            className="flex h-9 w-9 items-center justify-center rounded-md text-[#404040] hover:bg-[#F3F2EF] cursor-pointer"
+          >
+            <X className="h-4 w-4" strokeWidth={2} />
+          </button>
+        </div>
 
-          <View style={[styles.headerRow, { borderBottomColor: palette.border }]}>
-            <View style={styles.headerTextWrap}>
-              <Text style={[styles.sheetTitle, { color: palette.textPrimary }]}>
-                Broadcast Enterprise Notice
-              </Text>
-              <Text style={[styles.sheetSubtitle, { color: palette.textMuted }]}>
-                Push instant notification to employee mobile devices
-              </Text>
-            </View>
-            <Pressable
-              onPress={onClose}
-              style={[styles.closeBtn, { backgroundColor: palette.surfaceMuted }]}
+        <div className="overflow-y-auto px-4 py-4 space-y-3.5">
+          {errorMsg ? (
+            <div
+              role="alert"
+              className="rounded-md border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-[12px] font-medium text-[#B91C1C]"
             >
-              <X size={16} color={palette.textSecondary} strokeWidth={2.3} />
-            </Pressable>
-          </View>
+              {errorMsg}
+            </div>
+          ) : null}
 
-          <ScrollView style={styles.formBody} showsVerticalScrollIndicator={false}>
-            {errorMsg ? (
-              <View style={[styles.errorBox, { backgroundColor: palette.roseBg, borderColor: palette.rose }]}>
-                <Text style={[styles.errorText, { color: palette.rose }]}>{errorMsg}</Text>
-              </View>
-            ) : null}
-
-            <Text style={[styles.label, { color: palette.textSecondary }]}>Announcement Title *</Text>
-            <TextInput
+          <div>
+            <label htmlFor="notice-title" className="block text-[12px] font-medium text-[#404040] mb-1">
+              Notice title *
+            </label>
+            <input
+              id="notice-title"
+              type="text"
               value={title}
-              onChangeText={setTitle}
-              placeholder="e.g., Q4 Townhall & Annual Bonus Schedule"
-              placeholderTextColor={palette.textMuted}
-              style={[
-                styles.input,
-                {
-                  backgroundColor: palette.inputBg,
-                  borderColor: palette.border,
-                  color: palette.textPrimary,
-                },
-              ]}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g., Quarterly townhall schedule"
+              className="h-10 w-full rounded-md border border-[#E5E7EB] px-3 text-[13px] text-[#171717] placeholder:text-[#666666] focus:border-[#0A66C2] focus:outline-none"
             />
+          </div>
 
-            <Text style={[styles.label, { color: palette.textSecondary }]}>Priority Level</Text>
-            <View
-              style={[
-                styles.segmentedWrap,
-                { backgroundColor: palette.surfaceMuted, borderColor: palette.border },
-              ]}
-            >
-              {PRIORITIES.map((p) => {
-                const active = priority === p;
-                return (
-                  <Pressable
-                    key={p}
-                    onPress={() => setPriority(p)}
-                    style={[
-                      styles.chip,
-                      active
-                        ? {
-                            backgroundColor: palette.surface,
-                            borderColor: palette.border,
-                            borderWidth: 1,
-                          }
-                        : null,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.chipText,
-                        { color: active ? palette.primary : palette.textSecondary },
-                      ]}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <span className="block text-[12px] font-medium text-[#404040] mb-1.5">
+                Priority
+              </span>
+              <div className="grid grid-cols-3 gap-1.5">
+                {PRIORITIES.map((p) => {
+                  const active = priority === p;
+                  return (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setPriority(p)}
+                      className={`h-9 rounded-md border text-[12px] font-medium transition-colors cursor-pointer ${
+                        active
+                          ? 'border-[#0A66C2] bg-[#EFF6FF] text-[#0A66C2] font-semibold'
+                          : 'border-[#E5E7EB] bg-white text-[#666666] hover:bg-[#F3F2EF]'
+                      }`}
                     >
                       {p}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-            <Text style={[styles.label, { color: palette.textSecondary }]}>Category</Text>
-            <View
-              style={[
-                styles.segmentedWrap,
-                { backgroundColor: palette.surfaceMuted, borderColor: palette.border },
-              ]}
-            >
-              {CATEGORIES.map((cat) => {
-                const active = category === cat;
-                return (
-                  <Pressable
-                    key={cat}
-                    onPress={() => setCategory(cat)}
-                    style={[
-                      styles.chip,
-                      active
-                        ? {
-                            backgroundColor: palette.surface,
-                            borderColor: palette.border,
-                            borderWidth: 1,
-                          }
-                        : null,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.chipText,
-                        { color: active ? palette.primary : palette.textSecondary },
-                      ]}
-                    >
-                      {cat}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+            <div>
+              <label htmlFor="notice-category" className="block text-[12px] font-medium text-[#404040] mb-1.5">
+                Category
+              </label>
+              <select
+                id="notice-category"
+                value={category}
+                onChange={(e) =>
+                  setCategory(e.target.value as AnnouncementItem['category'])
+                }
+                className="h-9 w-full rounded-md border border-[#E5E7EB] bg-white px-3 text-[13px] text-[#171717] focus:border-[#0A66C2] focus:outline-none"
+              >
+                {CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
 
-            <View style={styles.twoCol}>
-              <View style={styles.colItem}>
-                <Text style={[styles.label, { color: palette.textSecondary }]}>Department</Text>
-                <TextInput
-                  value={department}
-                  onChangeText={setDepartment}
-                  placeholder="All Departments"
-                  placeholderTextColor={palette.textMuted}
-                  style={[
-                    styles.input,
-                    {
-                      backgroundColor: palette.inputBg,
-                      borderColor: palette.border,
-                      color: palette.textPrimary,
-                    },
-                  ]}
-                />
-              </View>
-              <View style={styles.colItem}>
-                <Text style={[styles.label, { color: palette.textSecondary }]}>Expiry Date</Text>
-                <TextInput
-                  value={expiryDate}
-                  onChangeText={setExpiryDate}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor={palette.textMuted}
-                  style={[
-                    styles.monoInput,
-                    {
-                      backgroundColor: palette.inputBg,
-                      borderColor: palette.border,
-                      color: palette.textPrimary,
-                    },
-                  ]}
-                />
-              </View>
-            </View>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="notice-dept" className="block text-[12px] font-medium text-[#404040] mb-1">
+                Department
+              </label>
+              <input
+                id="notice-dept"
+                type="text"
+                value={department}
+                onChange={(e) => setDepartment(e.target.value)}
+                className="h-10 w-full rounded-md border border-[#E5E7EB] px-3 text-[13px] text-[#171717] focus:border-[#0A66C2] focus:outline-none"
+              />
+            </div>
+            <div>
+              <label htmlFor="notice-expiry" className="block text-[12px] font-medium text-[#404040] mb-1">
+                Expiry date
+              </label>
+              <input
+                id="notice-expiry"
+                type="text"
+                value={expiryDate}
+                onChange={(e) => setExpiryDate(e.target.value)}
+                placeholder="YYYY-MM-DD"
+                className="h-10 w-full rounded-md border border-[#E5E7EB] px-3 text-[13px] text-[#171717] tabular-nums focus:border-[#0A66C2] focus:outline-none"
+              />
+            </div>
+          </div>
 
-            <Text style={[styles.label, { color: palette.textSecondary }]}>Target Audience</Text>
-            <TextInput
+          <div>
+            <label htmlFor="notice-audience" className="block text-[12px] font-medium text-[#404040] mb-1">
+              Target audience
+            </label>
+            <input
+              id="notice-audience"
+              type="text"
               value={targetAudience}
-              onChangeText={setTargetAudience}
-              placeholder="All Employees"
-              placeholderTextColor={palette.textMuted}
-              style={[
-                styles.input,
-                {
-                  backgroundColor: palette.inputBg,
-                  borderColor: palette.border,
-                  color: palette.textPrimary,
-                },
-              ]}
+              onChange={(e) => setTargetAudience(e.target.value)}
+              className="h-10 w-full rounded-md border border-[#E5E7EB] px-3 text-[13px] text-[#171717] focus:border-[#0A66C2] focus:outline-none"
             />
+          </div>
 
-            <Text style={[styles.label, { color: palette.textSecondary }]}>Message Details *</Text>
-            <TextInput
+          <div>
+            <label htmlFor="notice-body" className="block text-[12px] font-medium text-[#404040] mb-1">
+              Message details *
+            </label>
+            <textarea
+              id="notice-body"
+              rows={4}
               value={description}
-              onChangeText={setDescription}
-              multiline
-              numberOfLines={4}
-              placeholder="Write the official announcement message here..."
-              placeholderTextColor={palette.textMuted}
-              style={[
-                styles.textArea,
-                {
-                  backgroundColor: palette.inputBg,
-                  borderColor: palette.border,
-                  color: palette.textPrimary,
-                },
-              ]}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Write the official notice message..."
+              className="w-full rounded-md border border-[#E5E7EB] px-3 py-2 text-[13px] text-[#171717] placeholder:text-[#666666] focus:border-[#0A66C2] focus:outline-none"
             />
-          </ScrollView>
+          </div>
+        </div>
 
-          <View style={[styles.footerRow, { borderTopColor: palette.border }]}>
-            <Pressable
-              onPress={onClose}
-              style={[styles.secondaryBtn, { borderColor: palette.border, backgroundColor: palette.inputBg }]}
-            >
-              <Text style={[styles.secondaryBtnText, { color: palette.textSecondary }]}>Cancel</Text>
-            </Pressable>
-            <Pressable
-              onPress={handlePublish}
-              disabled={isLoading}
-              style={[styles.primaryBtn, { backgroundColor: palette.primary }]}
-            >
-              <Text style={styles.primaryBtnText}>
-                {isLoading ? 'Publishing...' : 'Publish Notice'}
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-      </View>
-    </Modal>
+        <div className="flex items-center justify-end gap-2 border-t border-[#E5E7EB] px-4 py-3 shrink-0">
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-9 rounded-md border border-[#E5E7EB] bg-white px-4 text-[13px] font-medium text-[#171717] hover:bg-[#F3F2EF] cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="h-9 rounded-md bg-[#0A66C2] px-4 text-[13px] font-semibold text-white hover:bg-[#004182] disabled:opacity-50 cursor-pointer"
+          >
+            {isLoading ? 'Publishing...' : 'Publish notice'}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 }
-
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    width: '100%',
-    maxWidth: 440,
-    alignSelf: 'center',
-    borderTopLeftRadius: 24, // rounded-3xl
-    borderTopRightRadius: 24,
-    borderWidth: 1,
-    maxHeight: '90%',
-    paddingBottom: 20,
-  },
-  handleWrap: {
-    alignItems: 'center',
-    paddingTop: 10,
-    paddingBottom: 6,
-  },
-  handleBar: {
-    width: 40, // w-10
-    height: 6, // h-1.5
-    borderRadius: 3,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-  },
-  headerTextWrap: {
-    flex: 1,
-    paddingRight: 12,
-  },
-  sheetTitle: {
-    fontFamily: FONT_SANS,
-    fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: -0.3,
-  },
-  sheetSubtitle: {
-    fontFamily: FONT_SANS,
-    fontSize: 12,
-    marginTop: 2,
-  },
-  closeBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  formBody: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-  },
-  errorBox: {
-    padding: 12,
-    borderRadius: 14,
-    borderWidth: 1,
-    marginBottom: 12,
-  },
-  errorText: {
-    fontFamily: FONT_SANS,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  label: {
-    fontFamily: FONT_SANS,
-    fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 6,
-    marginTop: 12,
-  },
-  input: {
-    fontFamily: FONT_SANS,
-    height: 48, // h-12 touch hitbox
-    borderRadius: 16, // rounded-2xl
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    fontSize: 14,
-  },
-  monoInput: {
-    fontFamily: FONT_MONO,
-    fontVariant: ['tabular-nums'],
-    height: 48, // h-12 touch hitbox
-    borderRadius: 16, // rounded-2xl
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    fontSize: 13,
-  },
-  textArea: {
-    fontFamily: FONT_SANS,
-    minHeight: 96,
-    borderRadius: 16, // rounded-2xl
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 14,
-    textAlignVertical: 'top',
-    marginBottom: 16,
-  },
-  twoCol: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  colItem: {
-    flex: 1,
-  },
-  segmentedWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    padding: 4, // p-1
-    borderRadius: 16, // rounded-2xl
-    borderWidth: 1,
-    gap: 4,
-  },
-  chip: {
-    minHeight: 40, // min-h-[40px]
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12, // rounded-xl
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  chipText: {
-    fontFamily: FONT_SANS,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  footerRow: {
-    flexDirection: 'row',
-    gap: 10,
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    marginTop: 8,
-    borderTopWidth: 1,
-  },
-  secondaryBtn: {
-    flex: 1,
-    height: 48, // h-12 touch target
-    borderRadius: 16, // rounded-2xl
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  secondaryBtnText: {
-    fontFamily: FONT_SANS,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  primaryBtn: {
-    flex: 1.5,
-    height: 48, // h-12 touch target
-    borderRadius: 16, // rounded-2xl
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primaryBtnText: {
-    fontFamily: FONT_SANS,
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-});

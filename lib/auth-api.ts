@@ -4,11 +4,11 @@ import {
   Ofc360Role,
   resolveRoleDashboardPath,
 } from './auth-schemas';
+import { localMockFetch } from '../src/services/local-mock-engine';
 
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, '') || '';
+export const API_BASE_URL = '';
 
-export const AUTH_API_PREFIX = `${API_BASE_URL}/api/v1/auth`;
+export const AUTH_API_PREFIX = `/api/v1/auth`;
 
 export interface Ofc360User {
   id: string;
@@ -166,7 +166,7 @@ export class Ofc360AuthClient {
 
   constructor(fetchImpl?: FetchLike, onSessionExpired?: () => void) {
     this.fetchImpl =
-      fetchImpl || ((input, init) => globalThis.fetch(input, init));
+      fetchImpl || ((input, init) => localMockFetch(input, init));
     this.onSessionExpired = onSessionExpired;
   }
 

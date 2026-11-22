@@ -425,190 +425,124 @@ export function AttendanceAnalyticsWorkspaceShell({
   };
 
   return (
-    <div className={embedded ? 'space-y-4' : 'min-h-screen bg-slate-50 p-4 sm:p-6'}>
-      <div className="mx-auto max-w-7xl space-y-4">
-        {/* Top Header & RBAC Switcher */}
-        <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="rounded-lg bg-indigo-600 px-2.5 py-1 text-[11px] font-bold text-white uppercase">
-                23-Module Suite
-              </span>
-              <h1 className="text-base font-bold text-slate-900 sm:text-lg">
-                Attendance Analytics & Workforce Intelligence
-              </h1>
-            </div>
-            <p className="mt-0.5 text-xs text-slate-500">
-              Punctuality, Absenteeism, Overtime, Shifts, Geo-Fence, Biometric
-              Terminals, Anomaly Detection & Payroll Impact
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <label
-              htmlFor="attendance-rbac-select"
-              className="text-xs font-semibold text-slate-600"
-            >
-              RBAC Role:
-            </label>
-            <select
-              id="attendance-rbac-select"
-              value={role}
-              onChange={(e) =>
-                setRole(e.target.value as AttendanceAnalyticsRole)
-              }
-              className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-800"
-            >
-              {ROLE_OPTIONS.map((r) => (
-                <option key={r.value} value={r.value}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
-
-            <button
-              type="button"
-              onClick={() => setShowDirectory((prev) => !prev)}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-            >
-              <LayoutGrid className="h-3.5 w-3.5 text-indigo-600" />
-              {showDirectory ? 'Open Active Module' : 'All 23 Modules Directory'}
-            </button>
-          </div>
-        </div>
-
-        {/* Shared Global Filter Bar */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1 text-xs font-bold text-slate-700">
-              <Filter className="h-3.5 w-3.5 text-indigo-600" />
-              Global Filters:
-            </span>
-            <select
-              aria-label="Date Range Preset"
-              value={filters.dateRange || 'Last30Days'}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, dateRange: e.target.value }))
-              }
-              className="rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs"
-            >
-              <option value="Today">Today (Live)</option>
-              <option value="Yesterday">Yesterday</option>
-              <option value="ThisWeek">This Week</option>
-              <option value="Last7Days">Last 7 Days</option>
-              <option value="ThisMonth">This Month</option>
-              <option value="Last30Days">Last 30 Days</option>
-              <option value="Quarter">Quarter</option>
-              <option value="YTD">Year to Date (YTD)</option>
-            </select>
-
-            <input
-              type="text"
-              value={filters.department || ''}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, department: e.target.value }))
-              }
-              placeholder="Department filter..."
-              className="w-36 rounded-xl border border-slate-200 px-2.5 py-1.5 text-xs"
-            />
-            <input
-              type="text"
-              value={filters.location || ''}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, location: e.target.value }))
-              }
-              placeholder="Location / Branch..."
-              className="w-36 rounded-xl border border-slate-200 px-2.5 py-1.5 text-xs"
-            />
-            <input
-              type="text"
-              value={filters.shift || ''}
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, shift: e.target.value }))
-              }
-              placeholder="Shift code..."
-              className="w-28 rounded-xl border border-slate-200 px-2.5 py-1.5 text-xs"
-            />
-            <button
-              type="button"
-              onClick={() =>
-                setFilters({
-                  dateRange: 'Last30Days',
-                  entity: '',
-                  department: '',
-                  location: '',
-                  shift: '',
-                  employmentType: '',
-                })
-              }
-              className="rounded-xl border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100"
-            >
-              Reset Filters
-            </button>
-          </div>
-        </div>
-
+    <div
+      className={
+        showDirectory
+          ? 'w-full p-0 m-0'
+          : embedded
+            ? 'space-y-4 p-4'
+            : 'min-h-screen bg-slate-50 p-4 sm:p-6'
+      }
+    >
+      <div className={showDirectory ? 'w-full p-0 m-0' : 'mx-auto max-w-7xl space-y-4'}>
         {showDirectory ? (
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            {groupedCards.map((group) => (
-              <div
-                key={group.groupTitle}
-                className="rounded-2xl border border-slate-200 bg-white p-3 shadow-xs"
-              >
-                <p className="px-2 pb-2 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-                  {group.groupTitle}
-                </p>
-                <div className="divide-y divide-slate-100">
-                  {group.items.map((mod) => {
-                    const IconComponent = mod.icon;
-                    const perm = evaluateAttendanceAnalyticsPermission(
-                      role,
-                      mod.id
-                    );
-                    return (
-                      <button
-                        key={mod.id}
-                        type="button"
-                        onClick={() => {
-                          setActiveModule(mod.id);
-                          setShowDirectory(false);
-                        }}
-                        className="flex w-full items-center justify-between gap-3 rounded-xl px-2.5 py-2.5 text-left transition-colors hover:bg-slate-50"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${mod.iconBg} ${mod.iconColor}`}
-                          >
-                            <IconComponent className="h-4 w-4" />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-bold text-slate-900">
-                                {mod.title}
-                              </span>
-                              {!perm.canView && (
-                                <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
-                                  Restricted
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-[11px] text-slate-500">
-                              {mod.subtitle}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600">
-                          <ChevronRight className="h-3.5 w-3.5" />
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+          <div className="w-full bg-white divide-y divide-zinc-100">
+            {ATTENDANCE_ANALYTICS_MODULES_REGISTRY.map((mod) => {
+              const perm = evaluateAttendanceAnalyticsPermission(
+                role,
+                mod.id
+              );
+              return (
+                <button
+                  key={mod.id}
+                  type="button"
+                  onClick={() => {
+                    setActiveModule(mod.id);
+                    setShowDirectory(false);
+                  }}
+                  className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors hover:bg-zinc-100/70 cursor-pointer"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[14px] font-semibold text-zinc-950">
+                        {mod.title}
+                      </span>
+                      {!perm.canView && (
+                        <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
+                          Restricted
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[12px] font-normal text-zinc-500 truncate mt-0.5">
+                      {mod.subtitle}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         ) : (
           <div className="space-y-4">
+            {/* Shared Global Filter Bar */}
+            <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1 text-xs font-bold text-slate-700">
+                  <Filter className="h-3.5 w-3.5 text-indigo-600" />
+                  Global Filters:
+                </span>
+                <select
+                  aria-label="Date Range Preset"
+                  value={filters.dateRange || 'Last30Days'}
+                  onChange={(e) =>
+                    setFilters((f) => ({ ...f, dateRange: e.target.value }))
+                  }
+                  className="rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs"
+                >
+                  <option value="Today">Today (Live)</option>
+                  <option value="Yesterday">Yesterday</option>
+                  <option value="ThisWeek">This Week</option>
+                  <option value="Last7Days">Last 7 Days</option>
+                  <option value="ThisMonth">This Month</option>
+                  <option value="Last30Days">Last 30 Days</option>
+                  <option value="Quarter">Quarter</option>
+                  <option value="YTD">Year to Date (YTD)</option>
+                </select>
+
+                <input
+                  type="text"
+                  value={filters.department || ''}
+                  onChange={(e) =>
+                    setFilters((f) => ({ ...f, department: e.target.value }))
+                  }
+                  placeholder="Department filter..."
+                  className="w-36 rounded-xl border border-slate-200 px-2.5 py-1.5 text-xs"
+                />
+                <input
+                  type="text"
+                  value={filters.location || ''}
+                  onChange={(e) =>
+                    setFilters((f) => ({ ...f, location: e.target.value }))
+                  }
+                  placeholder="Location / Branch..."
+                  className="w-36 rounded-xl border border-slate-200 px-2.5 py-1.5 text-xs"
+                />
+                <input
+                  type="text"
+                  value={filters.shift || ''}
+                  onChange={(e) =>
+                    setFilters((f) => ({ ...f, shift: e.target.value }))
+                  }
+                  placeholder="Shift code..."
+                  className="w-28 rounded-xl border border-slate-200 px-2.5 py-1.5 text-xs"
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFilters({
+                      dateRange: 'Last30Days',
+                      entity: '',
+                      department: '',
+                      location: '',
+                      shift: '',
+                      employmentType: '',
+                    })
+                  }
+                  className="rounded-xl border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100"
+                >
+                  Reset Filters
+                </button>
+              </div>
+            </div>
             {/* Horizontal Pill Navigation */}
             <div className="flex items-center gap-1.5 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-xs">
               <button

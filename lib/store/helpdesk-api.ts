@@ -9,6 +9,7 @@ import {
   SlaRuleConfig,
 } from '@/lib/helpdesk-types';
 import { authClient, API_BASE_URL } from '@/lib/auth-api';
+import { localMockFetch } from '@/src/services/local-mock-engine';
 
 const HELPDESK_API_BASE = `${API_BASE_URL}/api/v1/hr/helpdesk`;
 
@@ -16,6 +17,7 @@ export const helpDeskApi = createApi({
   reducerPath: 'helpDeskApi',
   baseQuery: fetchBaseQuery({
     baseUrl: HELPDESK_API_BASE,
+    fetchFn: localMockFetch,
     prepareHeaders: (headers) => {
       const token = authClient.getAccessToken();
       if (token) {

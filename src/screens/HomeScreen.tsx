@@ -1,26 +1,16 @@
-import React from 'react';
+'use client';
+
+import React, { useMemo } from 'react';
 import {
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-} from 'react-native';
-import {
-  LayoutDashboard,
-  Clock,
-  CalendarClock,
-  CalendarDays,
   Users,
-  UserCheck,
+  Clock,
   ClipboardCheck,
+  CalendarDays,
   UserPlus,
   Megaphone,
   ScanFace,
   Wallet,
-  ChevronRight,
-  CheckCircle2,
 } from 'lucide-react';
-import { getPalette, FONT_SANS, FONT_MONO } from '../theme/colors';
 import {
   HrDashboardDataState,
   HomeInternalTab,
@@ -29,51 +19,87 @@ import {
 } from '@/lib/hr-dashboard-logic';
 import {
   useDecideApprovalMutation,
-  useTriggerPayrollRunMutation,
 } from '@/lib/store/hr-api';
+import {
+  formatDynamicOverviewDate,
+  formatMetricValue,
+  getAuthorizedQuickActions,
+  getCurrentYearHolidayLabel,
+  resolveDataSectionState,
+} from '@/src/lib/linkedin-ui-helpers';
+import {
+  LinkedInTopTabs,
+  LinkedInTopTabItem,
+  LinkedInSection,
+  LinkedInEmptyState,
+  LinkedInLoadingRows,
+  LinkedInErrorState,
+} from '../components/linkedin/LinkedInPrimitives';
 import { ShiftsAndRostersScreen } from './ShiftsAndRostersScreen';
 import { HolidayCalendarScreen } from './HolidayCalendarScreen';
 
 interface HomeScreenProps {
-  data: HrDashboardDataState;
+  data?: HrDashboardDataState;
+  isLoading?: boolean;
+  isError?: boolean;
+  onRetry?: () => void;
   activeHomeTab: HomeInternalTab;
   onSelectHomeTab: (tab: HomeInternalTab) => void;
   onNavigateTab: (tab: BottomNavTab) => void;
   onOpenAddEmployee: () => void;
   onOpenAnnouncement: () => void;
+  onOpenPayroll?: () => void;
   isDark: boolean;
   canManage: boolean;
   onSuccessToast: (msg: string) => void;
 }
 
-const HOME_TABS: {
-  id: HomeInternalTab;
-  label: string;
-  Icon: React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
-}[] = [
-  { id: 'overview', label: 'Overview', Icon: LayoutDashboard },
-  { id: 'shifts', label: 'Shifts', Icon: Clock },
-  { id: 'rosters', label: 'Rosters', Icon: CalendarClock },
-  { id: 'holidays', label: 'Holidays', Icon: CalendarDays },
+const HOME_TABS: LinkedInTopTabItem<HomeInternalTab>[] = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'shifts', label: 'Shifts' },
+  { id: 'rosters', label: 'Rosters' },
+  { id: 'holidays', label: 'Holidays' },
 ];
 
 export function HomeScreen({
   data,
+  isLoading = false,
+  isError = false,
+  onRetry,
   activeHomeTab,
   onSelectHomeTab,
   onNavigateTab,
   onOpenAddEmployee,
   onOpenAnnouncement,
+  onOpenPayroll,
   isDark,
   canManage,
   onSuccessToast,
 }: HomeScreenProps) {
-  const palette = getPalette(isDark);
   const [decideApproval] = useDecideApprovalMutation();
-  const [triggerPayroll, { isLoading: isRunningPayroll }] = useTriggerPayrollRunMutation();
 
-  const attendanceStats = calculateAttendancePercentages(data.kpis.attendance);
-  const pendingApprovals = data.approvals.filter((a) => a.status === 'Pending');
+  const todayFormatted = useMemo(() => formatDynamicOverviewDate(), []);
+  const currentYearHolidayLabel = useMemo(() => getCurrentYearHolidayLabel(), []);
+
+  const attendanceStats = data
+    ? calculateAttendancePercentages(data.kpis.attendance)
+    : null;
+
+  const pendingApprovals = useMemo(
+    () => (data ? data.approvals.filter((a) => a.status === 'Pending') : null),
+    [data]
+  );
+
+  const approvalsSectionState = resolveDataSectionState({
+    isLoading,
+    isError,
+    itemCount: pendingApprovals ? pendingApprovals.length : null,
+  });
+
+  const authorizedShortcuts = useMemo(
+    () => getAuthorizedQuickActions(canManage),
+    [canManage]
+  );
 
   const handleDecision = async (id: string, status: 'Approved' | 'Rejected') => {
     try {
@@ -84,370 +110,313 @@ export function HomeScreen({
     }
   };
 
-  const handlePayrollRun = async () => {
-    try {
-      const res = await triggerPayroll().unwrap();
-      onSuccessToast(res.message || 'Payroll cycle updated');
-    } catch {
-      onSuccessToast('Payroll cycle action failed');
+  const handleShortcutPress = (
+    id: 'add_employee' | 'notice' | 'check_in' | 'payroll'
+  ) => {
+    if (id === 'add_employee') {
+      onOpenAddEmployee();
+    } else if (id === 'notice') {
+      onOpenAnnouncement();
+    } else if (id === 'check_in') {
+      onNavigateTab('attendance');
+    } else if (id === 'payroll') {
+      if (onOpenPayroll) {
+        onOpenPayroll();
+      } else {
+        onNavigateTab('more');
+      }
+    }
+  };
+
+  const getShortcutIcon = (
+    id: 'add_employee' | 'notice' | 'check_in' | 'payroll'
+  ) => {
+    switch (id) {
+      case 'add_employee':
+        return UserPlus;
+      case 'notice':
+        return Megaphone;
+      case 'check_in':
+        return ScanFace;
+      case 'payroll':
+        return Wallet;
     }
   };
 
   return (
-    <View style={styles.container}>
-      {/* Segmented Sub-Tab Navigation (p-1 rounded-2xl bg-slate-100/90 with active white/indigo-600 rounded-xl min-h-[40px]) */}
-      <View
-        style={[
-          styles.tabSegmentBar,
-          { backgroundColor: palette.surfaceMuted, borderColor: palette.border },
-        ]}
-      >
-        {HOME_TABS.map((t) => {
-          const active = activeHomeTab === t.id;
-          const SubTabIcon = t.Icon;
-          return (
-            <Pressable
-              key={t.id}
-              onPress={() => onSelectHomeTab(t.id)}
-              style={[
-                styles.segmentButton,
-                active
-                  ? {
-                      backgroundColor: palette.surface,
-                      borderColor: palette.border,
-                      borderWidth: 1,
-                    }
-                  : null,
-              ]}
-            >
-              <SubTabIcon
-                size={14}
-                color={active ? palette.primary : palette.textMuted}
-                strokeWidth={active ? 2.3 : 2}
-              />
-              <Text
-                style={[
-                  styles.segmentButtonText,
-                  { color: active ? palette.primary : palette.textMuted },
-                ]}
-              >
-                {t.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+    <div className="w-full space-y-2 md:space-y-4">
+      {/* Flat Underlined Top Navigation Tabs (Overview | Shifts | Rosters | Holidays) */}
+      <div className="w-full md:rounded-lg md:overflow-hidden md:border md:border-[#E5E7EB]">
+        <LinkedInTopTabs
+          tabs={HOME_TABS}
+          activeTab={activeHomeTab}
+          onSelect={onSelectHomeTab}
+          ariaLabel="Workforce overview navigation"
+        />
+      </div>
 
       {activeHomeTab === 'overview' ? (
-        <View style={styles.stack}>
-          {/* 4 Live KPI Cards (rounded-3xl p-5, tabular-nums monospace metrics) */}
-          <View style={styles.kpiGrid}>
-            <Pressable
-              onPress={() => onNavigateTab('workforce')}
-              style={[
-                styles.kpiCard,
-                { backgroundColor: palette.surface, borderColor: palette.border },
-              ]}
-            >
-              <View style={styles.kpiTopRow}>
-                <Text style={[styles.kpiLabel, { color: palette.textMuted }]}>
-                  Active Workforce
-                </Text>
-                <Users size={16} color={palette.primary} strokeWidth={2.2} />
-              </View>
-              <Text style={[styles.kpiVal, { color: palette.textPrimary }]}>
-                {data.workforce.length}
-              </Text>
-              <View style={styles.kpiFooterRow}>
-                <Text style={[styles.kpiMeta, { color: palette.textMuted }]}>
-                  Directory records
-                </Text>
-                <ChevronRight size={13} color={palette.textMuted} />
-              </View>
-            </Pressable>
+        <div className="space-y-2 md:space-y-4">
+          {/* 1. Workforce Overview Section (2x2 Thin-Bordered Metric Grid) */}
+          <LinkedInSection>
+            <div className="flex items-baseline justify-between gap-3 px-4 pt-4 pb-3">
+              <h1 className="text-[16px] font-semibold tracking-tight text-[#171717]">
+                Workforce overview
+              </h1>
+              <span className="text-[12px] font-normal text-[#666666] whitespace-nowrap">
+                {todayFormatted}
+              </span>
+            </div>
 
-            <Pressable
-              onPress={() => onNavigateTab('attendance')}
-              style={[
-                styles.kpiCard,
-                { backgroundColor: palette.surface, borderColor: palette.border },
-              ]}
-            >
-              <View style={styles.kpiTopRow}>
-                <Text style={[styles.kpiLabel, { color: palette.textMuted }]}>
-                  Attendance Rate
-                </Text>
-                <UserCheck size={16} color={palette.emerald} strokeWidth={2.2} />
-              </View>
-              <Text style={[styles.kpiVal, { color: palette.emerald }]}>
-                {attendanceStats.effectivePresentPct}%
-              </Text>
-              <View style={styles.kpiFooterRow}>
-                <Text style={[styles.kpiMeta, { color: palette.textMuted }]}>
-                  {data.kpis.attendance.present} Present today
-                </Text>
-                <ChevronRight size={13} color={palette.textMuted} />
-              </View>
-            </Pressable>
+            <div className="grid grid-cols-2 border-t border-[#E5E7EB]">
+              {/* Cell 1: Active workforce */}
+              <button
+                type="button"
+                onClick={() => onNavigateTab('workforce')}
+                className="flex flex-col items-start justify-between border-r border-b border-[#E5E7EB] p-4 text-left hover:bg-[#F3F2EF]/60 transition-colors cursor-pointer min-h-[96px]"
+              >
+                <div className="flex items-center gap-1.5 text-[#666666]">
+                  <Users
+                    className="h-4 w-4 text-[#404040] shrink-0"
+                    strokeWidth={1.75}
+                  />
+                  <span className="text-[12px] sm:text-[13px] font-normal leading-snug">
+                    Active workforce
+                  </span>
+                </div>
+                <span className="mt-2 text-[24px] font-bold leading-none text-[#171717] tabular-nums">
+                  {formatMetricValue({
+                    value: data ? data.workforce.length : null,
+                    isLoading,
+                    isError,
+                  })}
+                </span>
+              </button>
 
-            <Pressable
-              onPress={() => onNavigateTab('approvals')}
-              style={[
-                styles.kpiCard,
-                { backgroundColor: palette.surface, borderColor: palette.border },
-              ]}
-            >
-              <View style={styles.kpiTopRow}>
-                <Text style={[styles.kpiLabel, { color: palette.textMuted }]}>
-                  Pending Approvals
-                </Text>
-                <ClipboardCheck size={16} color={palette.amber} strokeWidth={2.2} />
-              </View>
-              <Text style={[styles.kpiVal, { color: palette.amber }]}>
-                {pendingApprovals.length}
-              </Text>
-              <View style={styles.kpiFooterRow}>
-                <Text style={[styles.kpiMeta, { color: palette.textMuted }]}>
-                  Review queue
-                </Text>
-                <ChevronRight size={13} color={palette.textMuted} />
-              </View>
-            </Pressable>
+              {/* Cell 2: Attendance rate */}
+              <button
+                type="button"
+                onClick={() => onNavigateTab('attendance')}
+                className="flex flex-col items-start justify-between border-b border-[#E5E7EB] p-4 text-left hover:bg-[#F3F2EF]/60 transition-colors cursor-pointer min-h-[96px]"
+              >
+                <div className="flex items-center gap-1.5 text-[#666666]">
+                  <Clock
+                    className="h-4 w-4 text-[#404040] shrink-0"
+                    strokeWidth={1.75}
+                  />
+                  <span className="text-[12px] sm:text-[13px] font-normal leading-snug">
+                    Attendance rate
+                  </span>
+                </div>
+                <span className="mt-2 text-[24px] font-bold leading-none text-[#171717] tabular-nums">
+                  {formatMetricValue({
+                    value: attendanceStats
+                      ? attendanceStats.effectivePresentPct
+                      : null,
+                    isLoading,
+                    isError,
+                    suffix: '%',
+                  })}
+                </span>
+              </button>
 
-            <Pressable
-              onPress={() => onSelectHomeTab('holidays')}
-              style={[
-                styles.kpiCard,
-                { backgroundColor: palette.surface, borderColor: palette.border },
-              ]}
-            >
-              <View style={styles.kpiTopRow}>
-                <Text style={[styles.kpiLabel, { color: palette.textMuted }]}>
-                  2026 Holidays
-                </Text>
-                <CalendarDays size={16} color={palette.violet} strokeWidth={2.2} />
-              </View>
-              <Text style={[styles.kpiVal, { color: palette.textPrimary }]}>
-                {data.holidays.length}
-              </Text>
-              <View style={styles.kpiFooterRow}>
-                <Text style={[styles.kpiMeta, { color: palette.primary }]}>
-                  Open calendar
-                </Text>
-                <ChevronRight size={13} color={palette.primary} />
-              </View>
-            </Pressable>
-          </View>
+              {/* Cell 3: Pending approvals */}
+              <button
+                type="button"
+                onClick={() => onNavigateTab('approvals')}
+                className="flex flex-col items-start justify-between border-r border-[#E5E7EB] p-4 text-left hover:bg-[#F3F2EF]/60 transition-colors cursor-pointer min-h-[96px]"
+              >
+                <div className="flex items-center gap-1.5 text-[#666666]">
+                  <ClipboardCheck
+                    className="h-4 w-4 text-[#404040] shrink-0"
+                    strokeWidth={1.75}
+                  />
+                  <span className="text-[12px] sm:text-[13px] font-normal leading-snug">
+                    Pending approvals
+                  </span>
+                </div>
+                <span className="mt-2 text-[24px] font-bold leading-none text-[#171717] tabular-nums">
+                  {formatMetricValue({
+                    value: pendingApprovals ? pendingApprovals.length : null,
+                    isLoading,
+                    isError,
+                  })}
+                </span>
+              </button>
 
-          {/* Quick Actions Touch Bar (rounded-3xl p-5, h-12 rounded-2xl buttons) */}
-          {canManage ? (
-            <View
-              style={[
-                styles.card,
-                { backgroundColor: palette.surface, borderColor: palette.border },
-              ]}
-            >
-              <Text style={[styles.sectionTitle, { color: palette.textPrimary }]}>
-                Quick HR Actions
-              </Text>
-              <View style={styles.quickGrid}>
-                <Pressable
-                  onPress={onOpenAddEmployee}
-                  style={[
-                    styles.quickBtn,
-                    { backgroundColor: palette.inputBg, borderColor: palette.border },
-                  ]}
-                >
-                  <UserPlus size={18} color={palette.primary} strokeWidth={2.2} />
-                  <Text style={[styles.quickBtnTitle, { color: palette.textPrimary }]}>
-                    Add Employee
-                  </Text>
-                  <Text style={[styles.quickBtnSub, { color: palette.textMuted }]}>
-                    Onboard to directory
-                  </Text>
-                </Pressable>
+              {/* Cell 4: Current-year holidays */}
+              <button
+                type="button"
+                onClick={() => onSelectHomeTab('holidays')}
+                className="flex flex-col items-start justify-between p-4 text-left hover:bg-[#F3F2EF]/60 transition-colors cursor-pointer min-h-[96px]"
+              >
+                <div className="flex items-center gap-1.5 text-[#666666]">
+                  <CalendarDays
+                    className="h-4 w-4 text-[#404040] shrink-0"
+                    strokeWidth={1.75}
+                  />
+                  <span className="text-[12px] sm:text-[13px] font-normal leading-snug">
+                    {currentYearHolidayLabel}
+                  </span>
+                </div>
+                <span className="mt-2 text-[24px] font-bold leading-none text-[#171717] tabular-nums">
+                  {formatMetricValue({
+                    value: data ? data.holidays.length : null,
+                    isLoading,
+                    isError,
+                  })}
+                </span>
+              </button>
+            </div>
+          </LinkedInSection>
 
-                <Pressable
-                  onPress={onOpenAnnouncement}
-                  style={[
-                    styles.quickBtn,
-                    { backgroundColor: palette.inputBg, borderColor: palette.border },
-                  ]}
-                >
-                  <Megaphone size={18} color={palette.violet} strokeWidth={2.2} />
-                  <Text style={[styles.quickBtnTitle, { color: palette.textPrimary }]}>
-                    Broadcast Notice
-                  </Text>
-                  <Text style={[styles.quickBtnSub, { color: palette.textMuted }]}>
-                    Company announcement
-                  </Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={() => onNavigateTab('attendance')}
-                  style={[
-                    styles.quickBtn,
-                    { backgroundColor: palette.inputBg, borderColor: palette.border },
-                  ]}
-                >
-                  <ScanFace size={18} color={palette.emerald} strokeWidth={2.2} />
-                  <Text style={[styles.quickBtnTitle, { color: palette.textPrimary }]}>
-                    Face Check-In
-                  </Text>
-                  <Text style={[styles.quickBtnSub, { color: palette.textMuted }]}>
-                    Biometric attendance
-                  </Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={handlePayrollRun}
-                  disabled={isRunningPayroll}
-                  style={[
-                    styles.quickBtn,
-                    { backgroundColor: palette.inputBg, borderColor: palette.border },
-                  ]}
-                >
-                  <Wallet size={18} color={palette.amber} strokeWidth={2.2} />
-                  <Text style={[styles.quickBtnTitle, { color: palette.textPrimary }]}>
-                    {isRunningPayroll ? 'Processing...' : 'Run Payroll'}
-                  </Text>
-                  <Text style={[styles.quickBtnSub, { color: palette.textMuted }]}>
-                    {data.kpis.payroll.status}
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
+          {/* 2. Quick Actions Section (4 Equally Spaced Shortcuts in Single Row) */}
+          {authorizedShortcuts.length > 0 ? (
+            <LinkedInSection className="px-4 py-4">
+              <h2 className="text-[15px] font-semibold text-[#171717] mb-3.5">
+                Quick actions
+              </h2>
+              <div
+                className={`grid gap-2 ${
+                  authorizedShortcuts.length === 4
+                    ? 'grid-cols-4'
+                    : authorizedShortcuts.length === 3
+                      ? 'grid-cols-3'
+                      : authorizedShortcuts.length === 2
+                        ? 'grid-cols-2'
+                        : 'grid-cols-1'
+                }`}
+              >
+                {authorizedShortcuts.map((shortcut) => {
+                  const Icon = getShortcutIcon(shortcut.id);
+                  return (
+                    <button
+                      key={shortcut.id}
+                      type="button"
+                      onClick={() => handleShortcutPress(shortcut.id)}
+                      className="group flex flex-col items-center gap-1.5 py-1 focus-visible:outline-2 focus-visible:outline-[#0A66C2] rounded-lg cursor-pointer"
+                    >
+                      <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#F3F2EF] group-hover:bg-[#E5E7EB] transition-colors">
+                        <Icon
+                          className="h-5 w-5 text-[#404040]"
+                          strokeWidth={1.75}
+                        />
+                      </span>
+                      <span className="text-[12px] font-medium text-[#171717] text-center leading-tight">
+                        {shortcut.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </LinkedInSection>
           ) : null}
 
-          {/* Pending Approvals Queue (Single-elevation card, hairline dividers) */}
-          <View
-            style={[
-              styles.card,
-              { backgroundColor: palette.surface, borderColor: palette.border },
-            ]}
-          >
-            <View style={styles.cardHeaderRow}>
-              <Text style={[styles.sectionTitle, { color: palette.textPrimary }]}>
-                Pending Approvals ({pendingApprovals.length})
-              </Text>
-              <Pressable onPress={() => onNavigateTab('approvals')}>
-                <Text style={[styles.linkText, { color: palette.primary }]}>Open Center</Text>
-              </Pressable>
-            </View>
+          {/* 3. Pending Approvals Section */}
+          <LinkedInSection>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[#E5E7EB]">
+              <h2 className="text-[16px] font-semibold text-[#171717]">
+                Pending approvals
+              </h2>
+              <button
+                type="button"
+                onClick={() => onNavigateTab('approvals')}
+                className="min-h-[36px] px-1 text-[13px] font-semibold text-[#0A66C2] hover:underline cursor-pointer"
+              >
+                View all
+              </button>
+            </div>
 
-            {pendingApprovals.length === 0 ? (
-              <View style={styles.emptyBox}>
-                <CheckCircle2 size={24} color={palette.emerald} strokeWidth={2} />
-                <Text style={[styles.emptyTitle, { color: palette.textPrimary }]}>
-                  No Pending Approval Requests
-                </Text>
-                <Text style={[styles.emptySub, { color: palette.textMuted }]}>
-                  Leave, regularization, and expense requests will appear here in real time.
-                </Text>
-              </View>
+            {approvalsSectionState === 'loading' ? (
+              <LinkedInLoadingRows rows={2} />
+            ) : approvalsSectionState === 'error' ? (
+              <LinkedInErrorState
+                message="Could not fetch approval requests from the server."
+                onRetry={onRetry}
+              />
+            ) : approvalsSectionState === 'empty' ? (
+              <LinkedInEmptyState
+                title="You're all caught up"
+                subtitle="No pending approvals"
+                variant="success"
+              />
             ) : (
-              pendingApprovals.slice(0, 3).map((item, idx) => (
-                <View
-                  key={item.id}
-                  style={[
-                    styles.listRow,
-                    idx > 0
-                      ? { borderTopWidth: 1, borderTopColor: palette.borderSubtle }
-                      : null,
-                  ]}
-                >
-                  <View style={styles.listTop}>
-                    <View style={styles.listInfo}>
-                      <Text style={[styles.listName, { color: palette.textPrimary }]}>
+              <div className="divide-y divide-[#E5E7EB]">
+                {(pendingApprovals || []).slice(0, 4).map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 px-4 py-3.5"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[14px] font-semibold text-[#171717] truncate">
                         {item.employeeName}
-                      </Text>
-                      <Text style={[styles.listMeta, { color: palette.textMuted }]}>
+                      </p>
+                      <p className="text-[12px] text-[#666666] mt-0.5 truncate">
                         {item.category} · {item.durationOrAmount}
-                      </Text>
-                    </View>
+                      </p>
+                    </div>
                     {canManage ? (
-                      <View style={styles.actionPair}>
-                        <Pressable
-                          onPress={() => handleDecision(item.id, 'Approved')}
-                          style={[styles.approveBtn, { backgroundColor: palette.primary }]}
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleDecision(item.id, 'Approved')}
+                          className="min-h-[36px] rounded-md bg-[#0A66C2] px-3.5 text-xs font-semibold text-white hover:bg-[#004182] transition-colors cursor-pointer"
                         >
-                          <Text style={styles.btnWhiteText}>Approve</Text>
-                        </Pressable>
-                        <Pressable
-                          onPress={() => handleDecision(item.id, 'Rejected')}
-                          style={[
-                            styles.rejectBtn,
-                            { backgroundColor: palette.inputBg, borderColor: palette.border },
-                          ]}
+                          Approve
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDecision(item.id, 'Rejected')}
+                          className="min-h-[36px] rounded-md border border-[#E5E7EB] bg-white px-3.5 text-xs font-semibold text-[#171717] hover:bg-[#F3F2EF] transition-colors cursor-pointer"
                         >
-                          <Text style={[styles.rejectBtnText, { color: palette.textSecondary }]}>
-                            Reject
-                          </Text>
-                        </Pressable>
-                      </View>
+                          Reject
+                        </button>
+                      </div>
                     ) : null}
-                  </View>
-                </View>
-              ))
+                  </div>
+                ))}
+              </div>
             )}
-          </View>
+          </LinkedInSection>
 
-          {/* Announcements Feed (Single-elevation card, dot-separated metadata) */}
-          <View
-            style={[
-              styles.card,
-              { backgroundColor: palette.surface, borderColor: palette.border },
-            ]}
-          >
-            <View style={styles.cardHeaderRow}>
-              <Text style={[styles.sectionTitle, { color: palette.textPrimary }]}>
-                Enterprise Announcements ({data.announcements.length})
-              </Text>
-              {canManage ? (
-                <Pressable onPress={onOpenAnnouncement}>
-                  <Text style={[styles.linkText, { color: palette.primary }]}>+ Broadcast</Text>
-                </Pressable>
-              ) : null}
-            </View>
-
-            {data.announcements.length === 0 ? (
-              <View style={styles.emptyBox}>
-                <Megaphone size={24} color={palette.violet} strokeWidth={2} />
-                <Text style={[styles.emptyTitle, { color: palette.textPrimary }]}>
-                  No Active Announcements
-                </Text>
-                <Text style={[styles.emptySub, { color: palette.textMuted }]}>
-                  Tap &ldquo;+ Broadcast&rdquo; to publish an official notice to employees.
-                </Text>
-              </View>
-            ) : (
-              data.announcements.map((ann, idx) => (
-                <View
-                  key={ann.id}
-                  style={[
-                    styles.listRow,
-                    idx > 0
-                      ? { borderTopWidth: 1, borderTopColor: palette.borderSubtle }
-                      : null,
-                  ]}
-                >
-                  <Text style={[styles.listName, { color: palette.textPrimary }]}>
-                    {ann.title}
-                  </Text>
-                  <Text style={[styles.listMeta, { color: palette.textMuted }]}>
-                    {ann.category} · {ann.department} · {ann.priority} Priority
-                  </Text>
-                  <Text style={[styles.annDesc, { color: palette.textSecondary }]}>
-                    {ann.description}
-                  </Text>
-                </View>
-              ))
-            )}
-          </View>
-        </View>
+          {/* 4. Announcements Section (Only shown when real announcements exist) */}
+          {data && data.announcements.length > 0 ? (
+            <LinkedInSection>
+              <div className="flex items-center justify-between px-4 py-3 border-b border-[#E5E7EB]">
+                <h2 className="text-[16px] font-semibold text-[#171717]">
+                  Announcements
+                </h2>
+                {canManage ? (
+                  <button
+                    type="button"
+                    onClick={onOpenAnnouncement}
+                    className="min-h-[36px] px-1 text-[13px] font-semibold text-[#0A66C2] hover:underline cursor-pointer"
+                  >
+                    New notice
+                  </button>
+                ) : null}
+              </div>
+              <div className="divide-y divide-[#E5E7EB]">
+                {data.announcements.slice(0, 3).map((ann) => (
+                  <div key={ann.id} className="px-4 py-3.5">
+                    <p className="text-[14px] font-semibold text-[#171717]">
+                      {ann.title}
+                    </p>
+                    <p className="mt-0.5 text-[12px] text-[#666666]">
+                      {ann.category} · {ann.department}
+                    </p>
+                    <p className="mt-1.5 text-[13px] text-[#404040] leading-relaxed">
+                      {ann.description}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </LinkedInSection>
+          ) : null}
+        </div>
       ) : null}
 
-      {activeHomeTab === 'shifts' ? (
+      {activeHomeTab === 'shifts' && data ? (
         <ShiftsAndRostersScreen
           mode="shifts"
           shifts={data.shifts}
@@ -458,7 +427,7 @@ export function HomeScreen({
         />
       ) : null}
 
-      {activeHomeTab === 'rosters' ? (
+      {activeHomeTab === 'rosters' && data ? (
         <ShiftsAndRostersScreen
           mode="rosters"
           shifts={data.shifts}
@@ -469,7 +438,7 @@ export function HomeScreen({
         />
       ) : null}
 
-      {activeHomeTab === 'holidays' ? (
+      {activeHomeTab === 'holidays' && data ? (
         <HolidayCalendarScreen
           holidays={data.holidays}
           isDark={isDark}
@@ -477,197 +446,6 @@ export function HomeScreen({
           onSuccessToast={onSuccessToast}
         />
       ) : null}
-    </View>
+    </div>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    gap: 16,
-  },
-  tabSegmentBar: {
-    flexDirection: 'row',
-    borderRadius: 16, // rounded-2xl
-    borderWidth: 1,
-    padding: 4, // p-1
-    gap: 4,
-  },
-  segmentButton: {
-    flex: 1,
-    minHeight: 40, // min-h-[40px]
-    flexDirection: 'row',
-    gap: 6,
-    borderRadius: 12, // rounded-xl
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  segmentButtonText: {
-    fontFamily: FONT_SANS,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  stack: {
-    gap: 16,
-  },
-  kpiGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  kpiCard: {
-    width: '48%',
-    flexGrow: 1,
-    borderRadius: 24, // rounded-3xl
-    borderWidth: 1,
-    padding: 20, // p-5
-    gap: 6,
-  },
-  kpiTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  kpiLabel: {
-    fontFamily: FONT_SANS,
-    fontSize: 12,
-    fontWeight: '600',
-    flex: 1,
-  },
-  kpiVal: {
-    fontFamily: FONT_MONO,
-    fontVariant: ['tabular-nums'],
-    fontSize: 26,
-    fontWeight: '700',
-    letterSpacing: -0.6,
-    marginVertical: 2,
-  },
-  kpiFooterRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  },
-  kpiMeta: {
-    fontFamily: FONT_SANS,
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  card: {
-    borderRadius: 24, // rounded-3xl
-    borderWidth: 1,
-    padding: 20, // p-5
-  },
-  cardHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontFamily: FONT_SANS,
-    fontSize: 17,
-    fontWeight: '700',
-    letterSpacing: -0.3,
-  },
-  linkText: {
-    fontFamily: FONT_SANS,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  quickGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginTop: 14,
-  },
-  quickBtn: {
-    width: '48%',
-    flexGrow: 1,
-    minHeight: 48, // h-12 touch target
-    borderRadius: 16, // rounded-2xl
-    borderWidth: 1,
-    padding: 14,
-    gap: 4,
-  },
-  quickBtnTitle: {
-    fontFamily: FONT_SANS,
-    fontSize: 13,
-    fontWeight: '700',
-    marginTop: 4,
-  },
-  quickBtnSub: {
-    fontFamily: FONT_SANS,
-    fontSize: 11,
-  },
-  emptyBox: {
-    paddingVertical: 22,
-    alignItems: 'center',
-    gap: 6,
-  },
-  emptyTitle: {
-    fontFamily: FONT_SANS,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  emptySub: {
-    fontFamily: FONT_SANS,
-    fontSize: 12,
-    textAlign: 'center',
-  },
-  listRow: {
-    paddingVertical: 14,
-  },
-  listTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
-  listInfo: {
-    flex: 1,
-  },
-  listName: {
-    fontFamily: FONT_SANS,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  listMeta: {
-    fontFamily: FONT_SANS,
-    fontSize: 12,
-    marginTop: 3,
-  },
-  annDesc: {
-    fontFamily: FONT_SANS,
-    fontSize: 13,
-    marginTop: 6,
-  },
-  actionPair: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  approveBtn: {
-    height: 40,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  btnWhiteText: {
-    fontFamily: FONT_SANS,
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  rejectBtn: {
-    height: 40,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rejectBtnText: {
-    fontFamily: FONT_SANS,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-});

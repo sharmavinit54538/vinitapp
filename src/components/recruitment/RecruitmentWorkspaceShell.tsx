@@ -28,8 +28,6 @@ import {
   Briefcase,
   CheckCircle2,
   ArrowLeft,
-  Search,
-  X,
   Grid,
 } from 'lucide-react';
 import { useDispatch } from 'react-redux';
@@ -425,48 +423,30 @@ export function RecruitmentWorkspaceShell({
     }
 
     return (
-      <div className="space-y-3.5" data-testid="recruitment-23-modules-directory">
-        {CARD_GROUPS.map((groupNum) => {
-          const groupItems = filteredModules.filter(
-            (m) => m.cardGroup === groupNum
-          );
-          if (groupItems.length === 0) return null;
-
+      <div
+        className="w-full bg-white dark:bg-zinc-900 divide-y divide-zinc-100 dark:divide-zinc-800/80"
+        data-testid="recruitment-23-modules-directory"
+      >
+        {filteredModules.map((item) => {
+          const hasAccess = perms.canAccessModule(item.id);
           return (
-            <div
-              key={groupNum}
-              className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-[0_2px_12px_-4px_rgba(15,23,42,0.06)] overflow-hidden divide-y divide-slate-100 dark:divide-slate-800/80"
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => handleOpenModule(item.id)}
+              className={`w-full text-left px-4 py-3.5 flex items-center justify-between gap-3 transition hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50 cursor-pointer ${
+                hasAccess ? '' : 'opacity-60'
+              }`}
             >
-              {groupItems.map((item) => {
-                const ItemIcon = item.Icon;
-                const hasAccess = perms.canAccessModule(item.id);
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => handleOpenModule(item.id)}
-                    className={`w-full text-left px-4 py-3.5 flex items-center gap-3.5 transition active:scale-[0.99] hover:bg-slate-50/80 dark:hover:bg-slate-800/50 cursor-pointer ${
-                      hasAccess ? '' : 'opacity-60'
-                    }`}
-                  >
-                    <div
-                      className={`w-10 h-10 rounded-2xl shrink-0 flex items-center justify-center ${item.iconBgClass} ${item.iconColorClass}`}
-                    >
-                      <ItemIcon className="w-5 h-5 stroke-[2.2]" />
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[13px] font-bold text-slate-900 dark:text-white leading-snug truncate">
-                        {item.label}
-                      </div>
-                      <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-snug truncate mt-0.5">
-                        {item.subtitle}
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[14px] font-semibold text-zinc-950 dark:text-white leading-snug truncate">
+                  {item.label}
+                </div>
+                <div className="text-[12px] font-normal text-zinc-500 dark:text-zinc-400 leading-snug truncate mt-0.5">
+                  {item.subtitle}
+                </div>
+              </div>
+            </button>
           );
         })}
       </div>
@@ -477,14 +457,14 @@ export function RecruitmentWorkspaceShell({
     <div
       className={
         embedded
-          ? 'space-y-3 text-slate-900 dark:text-white font-sans'
+          ? 'text-slate-900 dark:text-white font-sans'
           : 'min-h-screen bg-slate-100 dark:bg-slate-950 flex justify-center text-slate-900 dark:text-white font-sans antialiased'
       }
     >
       <div
         className={
           embedded
-            ? 'w-full space-y-3'
+            ? 'w-full'
             : 'w-full max-w-[440px] min-h-screen bg-slate-50 dark:bg-slate-900 border-x border-slate-200 dark:border-slate-800 flex flex-col shadow-sm'
         }
       >
@@ -517,74 +497,29 @@ export function RecruitmentWorkspaceShell({
         )}
 
         {/* 2. MAIN CONTENT AREA */}
-        <main className={embedded ? 'space-y-3.5' : 'flex-1 p-3.5 space-y-3.5 overflow-x-hidden'}>
-          {/* App-style "← Back to All Modules" bar when standalone (!embedded) */}
-          {!embedded && (
-            <div className="rounded-3xl p-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-2.5 shadow-2xs">
-              <Link
-                href="/?tab=more"
-                className="min-h-[40px] px-3.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-indigo-600 dark:text-indigo-400 text-xs font-semibold inline-flex items-center justify-center hover:bg-indigo-50/60 transition-colors"
-              >
-                ← Back to All Modules
-              </Link>
-              <span className="text-[15px] font-bold text-slate-900 dark:text-white">
-                Recruitment
-              </span>
-            </div>
-          )}
-
+        <main
+          className={
+            viewMode === 'directory'
+              ? 'flex-1 p-0 m-0 bg-white dark:bg-zinc-900'
+              : embedded
+              ? 'p-4 space-y-3.5'
+              : 'flex-1 p-4 space-y-4 overflow-x-hidden bg-neutral-50 dark:bg-zinc-950'
+          }
+        >
           {viewMode === 'directory' ? (
-            <>
-              {/* Clean Search Card */}
-              <div className="rounded-2xl p-2.5 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search 23 recruitment modules..."
-                    className="w-full h-9 pl-8.5 pr-8 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                  {searchQuery && (
-                    <button
-                      type="button"
-                      onClick={() => setSearchQuery('')}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {renderDirectoryCards()}
-            </>
+            renderDirectoryCards()
           ) : (
             <section className="w-full min-w-0 space-y-3.5">
               {/* Sub-module Back Bar to return to Recruitment Modules list */}
-              <div className="rounded-3xl px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-2.5 shadow-2xs">
+              <div className="rounded-xl px-3.5 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 flex items-center justify-start gap-2.5">
                 <button
                   type="button"
                   onClick={() => setViewMode('directory')}
-                  className="min-h-[38px] px-3.5 rounded-xl bg-indigo-50 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer active:scale-95"
+                  className="h-9 px-3 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-950 dark:text-zinc-100 text-xs font-medium inline-flex items-center gap-1.5 cursor-pointer hover:bg-zinc-200/70 transition-colors"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>Back to Recruitment Modules</span>
+                  <span>All Recruitment Modules</span>
                 </button>
-
-                <div className="flex items-center gap-2 min-w-0">
-                  <div
-                    className={`w-7 h-7 rounded-xl shrink-0 flex items-center justify-center ${activeMeta.iconBgClass} ${activeMeta.iconColorClass}`}
-                  >
-                    <activeMeta.Icon className="w-3.5 h-3.5" />
-                  </div>
-                  <div className="text-right min-w-0">
-                    <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                      {activeMeta.label}
-                    </div>
-                  </div>
-                </div>
               </div>
 
               {activeModule === 'dashboard' ? (

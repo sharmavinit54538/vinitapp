@@ -1,4 +1,3 @@
-import { API_BASE_URL, authClient } from '../../lib/auth-api';
 import { HrAdminProfileStepData } from '../lib/auth-bootstrap';
 
 export interface SaveHrAdminProfileResponse {
@@ -8,34 +7,29 @@ export interface SaveHrAdminProfileResponse {
   message: string;
 }
 
+const HR_ADMIN_PROFILE_STORAGE_KEY = 'ofc360_local_hr_admin_profile_v1';
+
 export const profileApi = {
   async saveHrAdminProfile(
     payload: HrAdminProfileStepData
   ): Promise<SaveHrAdminProfileResponse> {
-    const token = authClient.getAccessToken();
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-    };
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-    }
-
-    const response = await fetch(
-      `${API_BASE_URL}/api/v1/hr/workspace-onboarding/profile`,
-      {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(payload),
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        window.localStorage.setItem(
+          HR_ADMIN_PROFILE_STORAGE_KEY,
+          JSON.stringify(payload)
+        );
+      } catch {
+        // Ignore storage quota issues in demo mode
       }
-    );
-
-    if (!response.ok) {
-      throw new Error(
-        `Failed to save HR Admin profile (${response.status})`
-      );
     }
 
-    return (await response.json()) as SaveHrAdminProfileResponse;
+    return {
+      status: 'saved',
+      employeeCode: payload.employeeCode || 'EMP-001',
+      fullName: payload.fullName || 'Aarav Sharma',
+      message: 'HR Admin profile saved locally.',
+    };
   },
 };
+

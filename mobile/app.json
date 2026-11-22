@@ -1,0 +1,58 @@
+{
+  "expo": {
+    "name": "OFC360",
+    "slug": "ofc360-hrms-mobile",
+    "version": "3.0.0",
+    "orientation": "portrait",
+    "scheme": "ofc360",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#4F46E5",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ofc360.hrms",
+      "infoPlist": {
+        "NSCameraUsageDescription": "OFC360 uses the camera for AI Face Check-In and IT Asset QR scanning.",
+        "NSLocationWhenInUseUsageDescription": "OFC360 verifies office geofence proximity during attendance check-in."
+      }
+    },
+    "android": {
+      "package": "com.ofc360.hrms",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.POST_NOTIFICATIONS"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow OFC360 to access your camera for Face Check-In and Asset QR scanning."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow OFC360 to verify your GPS geofence for attendance punch-in."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#4F46E5"
+        }
+      ],
+      "expo-secure-store",
+      "expo-document-picker"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

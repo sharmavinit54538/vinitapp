@@ -126,31 +126,12 @@ export function EmployeesTable() {
     changes: Partial<AdminEmployeeRecord>
   ) => {
     dispatch(updateEmployeeLocal({ id, changes }));
-    try {
-      await fetch('/api/v1/hr/admin-employees', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, changes }),
-      });
-    } catch {
-      // Optimistic Redux state is already updated
-    }
   };
 
   const syncEmployeeDelete = async (emp: AdminEmployeeRecord) => {
     dispatch(deleteEmployeeLocal(emp.id));
     setOpenMenuEmpId(null);
     toast.success(`${emp.fullName} deleted from directory.`);
-    try {
-      await fetch(
-        `/api/v1/hr/admin-employees?id=${encodeURIComponent(emp.id)}`,
-        {
-          method: 'DELETE',
-        }
-      );
-    } catch {
-      // Optimistic Redux state is already updated
-    }
   };
 
   const handleResendInvitation = async (emp: AdminEmployeeRecord) => {

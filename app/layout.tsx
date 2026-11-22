@@ -1,34 +1,48 @@
-import type {Metadata} from 'next';
-import {Plus_Jakarta_Sans, JetBrains_Mono} from 'next/font/google';
+import type {Metadata, Viewport} from 'next';
+import {Inter} from 'next/font/google';
 import './globals.css';
 
-const plusJakarta = Plus_Jakarta_Sans({
+const inter = Inter({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
-  variable: '--font-sans',
+  variable: '--font-inter',
+  display: 'swap',
 });
 
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ['latin'],
-  weight: ['400', '500', '600'],
-  variable: '--font-mono',
-});
+export const viewport: Viewport = {
+  themeColor: '#FFFFFF',
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+};
 
 export const metadata: Metadata = {
-  title: 'OFC360 – Enterprise Authentication',
+  title: 'OFC360 – Enterprise Workforce Platform',
   description:
-    'Modern enterprise SaaS authentication and identity verification system for OFC360.',
+    'Enterprise HRMS and workforce operations platform for OFC360.',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'OFC360',
+  },
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+    ],
+    apple: '/apple-touch-icon.png',
+  },
   openGraph: {
-    title: 'OFC360 – Enterprise Authentication',
+    title: 'OFC360 – Enterprise Workforce Platform',
     description:
-      'Modern enterprise SaaS authentication and identity verification system for OFC360.',
+      'Enterprise HRMS and workforce operations platform for OFC360.',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'OFC360 – Enterprise Authentication',
+    title: 'OFC360 – Enterprise Workforce Platform',
     description:
-      'Modern enterprise SaaS authentication and identity verification system for OFC360.',
+      'Enterprise HRMS and workforce operations platform for OFC360.',
   },
 };
 
@@ -36,13 +50,12 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
     <html
       lang="en"
+      className={inter.variable}
       suppressHydrationWarning
-      className={`${plusJakarta.variable} ${jetbrainsMono.variable}`}
     >
       <body
         suppressHydrationWarning
-        className="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased selection:bg-indigo-500/20 selection:text-indigo-600 dark:selection:text-indigo-400 overflow-x-hidden transition-colors duration-200"
-        style={{fontFamily: 'var(--font-sans), sans-serif'}}
+        className={`${inter.className} bg-[#F3F2EF] dark:bg-neutral-950 text-[#171717] dark:text-neutral-100 antialiased selection:bg-[#0A66C2]/15 selection:text-[#0A66C2] overflow-x-hidden`}
       >
         {children}
       </body>

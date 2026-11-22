@@ -1,5 +1,8 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import { API_BASE_URL, authClient } from '@/lib/auth-api';
+import {
+  getAdminDepartmentsStore,
+  setAdminDepartmentsStore,
+} from '@/lib/admin-workforce-store';
 
 export type DepartmentColorTheme =
   | 'indigo'
@@ -49,19 +52,7 @@ export interface CreateDepartmentPayload {
 export const fetchDepartmentsThunk = createAsyncThunk<AdminDepartmentRecord[]>(
   'adminDepartments/fetchAll',
   async () => {
-    const token = authClient.getAccessToken();
-    const headers: Record<string, string> = { Accept: 'application/json' };
-    if (token) headers.Authorization = `Bearer ${token}`;
-
-    const res = await fetch(`${API_BASE_URL}/api/v1/hr/admin-departments`, {
-      method: 'GET',
-      headers,
-    });
-    if (!res.ok) {
-      throw new Error(`Failed to fetch departments (${res.status})`);
-    }
-    const data = (await res.json()) as { items?: AdminDepartmentRecord[] };
-    return Array.isArray(data.items) ? data.items : [];
+    return [...getAdminDepartmentsStore()];
   }
 );
 
@@ -69,59 +60,51 @@ export const createDepartmentThunk = createAsyncThunk<
   AdminDepartmentRecord,
   CreateDepartmentPayload
 >('adminDepartments/createOne', async (payload) => {
-  const token = authClient.getAccessToken();
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
+  const current = getAdminDepartmentsStore();
+  const created: AdminDepartmentRecord = {
+    id: `dept-${Date.now()}`,
+    name: payload.name.trim(),
+    code: payload.code.trim().toUpperCase(),
+    parentDepartmentId: payload.parentDepartmentId || null,
+    parentDepartmentName: payload.parentDepartmentName || null,
+    managerName: payload.managerName.trim() || 'Aarav Sharma',
+    description:
+      payload.description.trim() ||
+      `${payload.name} core delivery & operations unit`,
+    budget: Number(payload.budget) || 250000,
+    headcountLimit: Number(payload.headcountLimit) || 25,
+    activeHeadcount: 1,
+    colorTheme: payload.colorTheme || 'indigo',
+    iconKey: payload.iconKey || 'Briefcase',
+    createdAt: new Date().toISOString().slice(0, 10),
   };
-  if (token) headers.Authorization = `Bearer ${token}`;
-
-  const res = await fetch(`${API_BASE_URL}/api/v1/hr/admin-departments`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) {
-    const errBody = (await res.json().catch(() => ({}))) as {
-      message?: string;
-    };
-    throw new Error(
-      errBody.message || `Failed to create department (${res.status})`
-    );
-  }
-  const data = (await res.json()) as { department: AdminDepartmentRecord };
-  return data.department;
+  setAdminDepartmentsStore([created, ...current]);
+  return created;
 });
 
 export const bulkImportDepartmentsThunk = createAsyncThunk<
   AdminDepartmentRecord[],
   CreateDepartmentPayload[]
 >('adminDepartments/bulkImport', async (rows) => {
-  const token = authClient.getAccessToken();
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
-  };
-  if (token) headers.Authorization = `Bearer ${token}`;
-
-  const res = await fetch(
-    `${API_BASE_URL}/api/v1/hr/admin-departments/bulk-import`,
-    {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ items: rows }),
-    }
-  );
-  if (!res.ok) {
-    const errBody = (await res.json().catch(() => ({}))) as {
-      message?: string;
-    };
-    throw new Error(
-      errBody.message || `Bulk department import failed (${res.status})`
-    );
-  }
-  const data = (await res.json()) as { items: AdminDepartmentRecord[] };
-  return Array.isArray(data.items) ? data.items : [];
+  const current = getAdminDepartmentsStore();
+  const added: AdminDepartmentRecord[] = rows.map((row, idx) => ({
+    id: `dept-${Date.now()}-${idx}`,
+    name: row.name.trim(),
+    code: row.code.trim().toUpperCase(),
+    parentDepartmentId: row.parentDepartmentId || null,
+    parentDepartmentName: row.parentDepartmentName || null,
+    managerName: row.managerName.trim() || 'Aarav Sharma',
+    description:
+      row.description.trim() || `${row.name} core delivery & operations unit`,
+    budget: Number(row.budget) || 250000,
+    headcountLimit: Number(row.headcountLimit) || 25,
+    activeHeadcount: 1,
+    colorTheme: row.colorTheme || 'indigo',
+    iconKey: row.iconKey || 'Briefcase',
+    createdAt: new Date().toISOString().slice(0, 10),
+  }));
+  setAdminDepartmentsStore([...added, ...current]);
+  return added;
 });
 
 /**

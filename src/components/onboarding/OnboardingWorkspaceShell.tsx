@@ -340,87 +340,19 @@ export function OnboardingWorkspaceShell({
     <div
       className={
         embedded
-          ? 'space-y-3'
+          ? ''
           : 'min-h-screen bg-slate-100/80 dark:bg-slate-950 text-slate-900 dark:text-slate-100'
       }
     >
       <div
         className={
           embedded
-            ? 'space-y-3'
+            ? 'w-full'
+            : viewMode === 'directory'
+            ? 'mx-auto max-w-[440px] min-h-screen bg-white dark:bg-zinc-900 border-x border-zinc-200/80 dark:border-zinc-800/80 p-0'
             : 'mx-auto max-w-[440px] min-h-screen bg-slate-50/90 dark:bg-slate-950 border-x border-slate-200/80 dark:border-slate-800/80 shadow-xl px-3.5 py-4 space-y-3.5'
         }
       >
-        {/* Top Bar with Role Switcher */}
-        <div className="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 p-3.5 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              {!embedded && (
-                <Link
-                  href="/"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-                  title="Back to HRMS Home"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                </Link>
-              )}
-              <div>
-                <h1 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white">
-                  Onboarding Suite (24 Modules)
-                </h1>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Pre-Boarding to Probation Confirmation · Typed API
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1.5">
-              <Shield className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
-              <select
-                aria-label="Onboarding Role Switcher"
-                value={role}
-                onChange={(e) => setRole(e.target.value as OnboardingRole)}
-                className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2 py-1 text-[11px] font-semibold text-slate-700 dark:text-slate-200"
-              >
-                {(Object.keys(ONBOARDING_ROLE_LABELS) as OnboardingRole[]).map(
-                  (r) => (
-                    <option key={r} value={r}>
-                      Role: {ONBOARDING_ROLE_LABELS[r]}
-                    </option>
-                  )
-                )}
-              </select>
-            </div>
-          </div>
-
-          {viewMode === 'module' && (
-            <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 min-w-0">
-                <div
-                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${activeMeta.iconBg} ${activeMeta.iconColor}`}
-                >
-                  <activeMeta.icon className="h-4 w-4" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                    {activeMeta.label}
-                  </p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                    {activeMeta.subtitle}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setViewMode('directory')}
-                className="inline-flex shrink-0 items-center gap-1 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 px-2.5 py-1.5 text-[11px] font-bold text-indigo-600 dark:text-indigo-300 hover:bg-indigo-100"
-              >
-                <ChevronLeft className="h-3.5 w-3.5" /> All 24 Modules
-              </button>
-            </div>
-          )}
-        </div>
-
         {/* Toast notification */}
         {toast && (
           <div className="rounded-xl bg-slate-900 dark:bg-indigo-600 text-white px-3.5 py-2.5 text-xs font-semibold shadow-md flex items-center justify-between">
@@ -435,55 +367,47 @@ export function OnboardingWorkspaceShell({
           </div>
         )}
 
-        {/* Directory View: 4 Cards x 6 Modules = 24 Modules */}
+        {/* Directory View: Single Continuous List */}
         {viewMode === 'directory' ? (
-          <div className="space-y-3">
-            {ONBOARDING_DIRECTORY_GROUPS.map((group, groupIndex) => (
-              <div
-                key={groupIndex}
-                className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 shadow-sm divide-y divide-slate-100 dark:divide-slate-800/70"
-              >
-                {group.map((mod) => {
-                  const IconComponent = mod.icon;
-                  const isSelected = mod.id === activeModule;
-                  return (
-                    <button
-                      key={mod.id}
-                      type="button"
-                      onClick={() => handleSelectModule(mod.id)}
-                      className={`w-full flex items-center justify-between gap-3 px-2.5 py-2.5 text-left transition rounded-2xl ${
-                        isSelected
-                          ? 'bg-indigo-50/60 dark:bg-indigo-950/30'
-                          : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div
-                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${mod.iconBg} ${mod.iconColor}`}
-                        >
-                          <IconComponent className="h-5 w-5" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[13px] font-bold text-slate-900 dark:text-white leading-tight truncate">
-                            {mod.label}
-                          </p>
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5 truncate">
-                            {mod.subtitle}
-                          </p>
-                        </div>
-                      </div>
-                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-indigo-50/80 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400">
-                        <ChevronRight className="h-4 w-4" />
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            ))}
+          <div className="w-full bg-white dark:bg-zinc-900 divide-y divide-zinc-100 dark:divide-zinc-800/70">
+            {ONBOARDING_MODULES_REGISTRY.map((mod) => {
+              const isSelected = mod.id === activeModule;
+              return (
+                <button
+                  key={mod.id}
+                  type="button"
+                  onClick={() => handleSelectModule(mod.id)}
+                  className={`w-full flex items-center justify-between gap-3 px-4 py-3.5 text-left transition cursor-pointer ${
+                    isSelected
+                      ? 'bg-zinc-100 dark:bg-zinc-800/60'
+                      : 'hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50'
+                  }`}
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[14px] font-semibold text-zinc-950 dark:text-white leading-snug truncate">
+                      {mod.label}
+                    </p>
+                    <p className="text-[12px] font-normal text-zinc-500 dark:text-zinc-400 leading-snug truncate mt-0.5">
+                      {mod.subtitle}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         ) : (
           /* Active Module Workspace */
-          <div>
+          <div className={embedded ? 'p-4 space-y-3.5' : 'space-y-3.5'}>
+            <div className="rounded-xl px-3.5 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 flex items-center justify-start gap-2.5">
+              <button
+                type="button"
+                onClick={() => setViewMode('directory')}
+                className="h-9 px-3 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-950 dark:text-zinc-100 text-xs font-medium inline-flex items-center gap-1.5 cursor-pointer hover:bg-zinc-200/70 transition-colors"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>All Onboarding Modules</span>
+              </button>
+            </div>
             {activeModule === 'dashboard' && (
               <OnboardingDashboardModule
                 onToast={notify}

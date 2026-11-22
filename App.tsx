@@ -5,7 +5,10 @@ import { Provider } from 'react-redux';
 import { makeHrStore, AppStore, setActiveRole } from '@/lib/store';
 import { Ofc360Role } from '@/lib/auth-schemas';
 import { RootNavigator } from './src/navigation/RootNavigator';
-import { EmployeeDashboardHub } from './src/components/employee-dashboard/EmployeeDashboardHub';
+import { EmployeePortalRoot } from './src/screens/employee/EmployeePortalRoot';
+import { ItAdminPortalRoot } from './src/screens/it-admin/ItAdminPortalRoot';
+import { RoleRouteGuard } from './components/auth/role-route-guard';
+import { resolveRoleDashboardPath } from './lib/auth-schemas';
 
 export interface MobileAppProps {
   initialRole?: Ofc360Role;
@@ -21,12 +24,18 @@ export default function App({ initialRole = 'hr_admin' }: MobileAppProps) {
   }, [initialRole, store]);
 
   if (initialRole === 'employee') {
-    return <EmployeeDashboardHub initialRole="employee" />;
+    return <EmployeePortalRoot />;
+  }
+
+  if (initialRole === 'it_admin') {
+    return <ItAdminPortalRoot />;
   }
 
   return (
-    <Provider store={store}>
-      <RootNavigator />
-    </Provider>
+    <RoleRouteGuard routePath={resolveRoleDashboardPath(initialRole)}>
+      <Provider store={store}>
+        <RootNavigator />
+      </Provider>
+    </RoleRouteGuard>
   );
 }

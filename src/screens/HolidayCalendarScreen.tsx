@@ -1670,12 +1670,13 @@ export function HolidayCalendarScreen({
 
 const styles = StyleSheet.create({
   container: {
-    gap: 16,
+    gap: 8,
   },
   topCard: {
-    borderRadius: 24, // rounded-3xl
-    borderWidth: 1,
-    padding: 20, // p-5
+    borderRadius: 0,
+    borderWidth: 0,
+    borderBottomWidth: 1,
+    padding: 16,
   },
   topHeaderRow: {
     flexDirection: 'row',
@@ -1688,14 +1689,14 @@ const styles = StyleSheet.create({
   },
   activeViewLabel: {
     fontFamily: FONT_SANS,
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '500',
   },
   activeViewTitle: {
     fontFamily: FONT_SANS,
-    fontSize: 20,
-    fontWeight: '700',
-    letterSpacing: -0.4,
+    fontSize: 17,
+    fontWeight: '600',
+    letterSpacing: -0.2,
     marginTop: 2,
   },
   activeViewSub: {
@@ -1711,9 +1712,9 @@ const styles = StyleSheet.create({
   addBtn: {
     flexDirection: 'row',
     gap: 5,
-    paddingHorizontal: 16,
-    height: 48, // h-12 touch target
-    borderRadius: 16, // rounded-2xl
+    paddingHorizontal: 14,
+    height: 38,
+    borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1724,50 +1725,50 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   threeDotBtn: {
-    width: 48, // h-12 touch target
-    height: 48,
-    borderRadius: 16, // rounded-2xl
+    width: 38,
+    height: 38,
+    borderRadius: 6,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   sectionStack: {
-    gap: 16,
+    gap: 8,
   },
   kpiGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 8,
   },
   kpiCard: {
     width: '48%',
     flexGrow: 1,
-    borderRadius: 24, // rounded-3xl
+    borderRadius: 8,
     borderWidth: 1,
-    padding: 20, // p-5
+    padding: 14,
   },
   kpiLabel: {
     fontFamily: FONT_SANS,
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '500',
   },
   kpiValue: {
-    fontFamily: FONT_MONO,
+    fontFamily: FONT_SANS,
     fontVariant: ['tabular-nums'],
-    fontSize: 26,
-    fontWeight: '700',
-    letterSpacing: -0.6,
+    fontSize: 22,
+    fontWeight: '600',
+    letterSpacing: -0.3,
     marginVertical: 4,
   },
   kpiHint: {
     fontFamily: FONT_SANS,
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '400',
   },
   card: {
-    borderRadius: 24, // rounded-3xl
+    borderRadius: 8,
     borderWidth: 1,
-    padding: 20, // p-5
+    padding: 16,
   },
   cardHeaderRow: {
     flexDirection: 'row',
@@ -1777,9 +1778,9 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontFamily: FONT_SANS,
-    fontSize: 17,
-    fontWeight: '700',
-    letterSpacing: -0.3,
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: -0.2,
   },
   cardSub: {
     fontFamily: FONT_SANS,
@@ -1806,27 +1807,27 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   barValue: {
-    fontFamily: FONT_MONO,
+    fontFamily: FONT_SANS,
     fontVariant: ['tabular-nums'],
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '600',
     marginBottom: 4,
   },
   barTrack: {
-    width: 16,
+    width: 14,
     height: 76,
-    borderRadius: 6,
+    borderRadius: 4,
     justifyContent: 'flex-end',
     overflow: 'hidden',
   },
   barFill: {
     width: '100%',
-    borderRadius: 6,
+    borderRadius: 4,
   },
   barLabel: {
     fontFamily: FONT_SANS,
-    fontSize: 9,
-    fontWeight: '600',
+    fontSize: 10,
+    fontWeight: '500',
     marginTop: 4,
   },
   typeList: {
@@ -1854,10 +1855,10 @@ const styles = StyleSheet.create({
   typeName: {
     fontFamily: FONT_SANS,
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   typeCount: {
-    fontFamily: FONT_MONO,
+    fontFamily: FONT_SANS,
     fontVariant: ['tabular-nums'],
     fontSize: 12,
     fontWeight: '600',
@@ -1874,27 +1875,27 @@ const styles = StyleSheet.create({
   timelineRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     gap: 12,
   },
   dateBadge: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
+    width: 44,
+    height: 44,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   dateBadgeMonth: {
     fontFamily: FONT_SANS,
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   dateBadgeDay: {
-    fontFamily: FONT_MONO,
+    fontFamily: FONT_SANS,
     fontVariant: ['tabular-nums'],
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '600',
   },
   timelineInfo: {
     flex: 1,
@@ -1902,7 +1903,7 @@ const styles = StyleSheet.create({
   holidayName: {
     fontFamily: FONT_SANS,
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   holidayMeta: {
     fontFamily: FONT_SANS,
@@ -1910,25 +1911,25 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   catBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
   catBadgeText: {
     fontFamily: FONT_SANS,
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   segmentedRow: {
     flexDirection: 'row',
-    borderRadius: 16, // rounded-2xl
-    padding: 4, // p-1
-    marginBottom: 14,
+    borderRadius: 6,
+    padding: 3,
+    marginBottom: 12,
   },
   segmentBtn: {
     flex: 1,
-    minHeight: 40, // min-h-[40px]
-    borderRadius: 12, // rounded-xl
+    minHeight: 36,
+    borderRadius: 4,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1944,16 +1945,16 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   navArrowBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    width: 38,
+    height: 38,
+    borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },
   monthTitle: {
     fontFamily: FONT_SANS,
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '600',
   },
   weekHeaderRow: {
     flexDirection: 'row',
@@ -1964,7 +1965,7 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   calendarGrid: {
     flexDirection: 'row',
@@ -1974,12 +1975,12 @@ const styles = StyleSheet.create({
     width: '14.28%',
     height: 44,
     borderWidth: 0.5,
-    borderRadius: 10,
+    borderRadius: 4,
     alignItems: 'center',
     justifyContent: 'center',
   },
   calendarDayNum: {
-    fontFamily: FONT_MONO,
+    fontFamily: FONT_SANS,
     fontVariant: ['tabular-nums'],
     fontSize: 13,
   },
@@ -1990,11 +1991,11 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   monthHolidaysSection: {
-    marginTop: 16,
+    marginTop: 14,
   },
   subHeading: {
     fontFamily: FONT_SANS,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
     marginBottom: 8,
   },
@@ -2006,22 +2007,22 @@ const styles = StyleSheet.create({
   yearGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 8,
   },
   yearMonthCard: {
     width: '48%',
     flexGrow: 1,
-    borderRadius: 16,
+    borderRadius: 8,
     borderWidth: 1,
-    padding: 14,
+    padding: 12,
   },
   yearMonthTitle: {
     fontFamily: FONT_SANS,
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   yearMonthCount: {
-    fontFamily: FONT_MONO,
+    fontFamily: FONT_SANS,
     fontVariant: ['tabular-nums'],
     fontSize: 12,
     fontWeight: '600',
@@ -2034,10 +2035,10 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     fontFamily: FONT_SANS,
-    height: 48, // h-12
-    borderRadius: 16, // rounded-2xl
+    height: 42,
+    borderRadius: 6,
     borderWidth: 1,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     fontSize: 13,
     marginBottom: 10,
   },
@@ -2047,13 +2048,13 @@ const styles = StyleSheet.create({
   filterRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 6,
   },
   filterChip: {
-    minHeight: 40,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
+    minHeight: 34,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -2061,11 +2062,11 @@ const styles = StyleSheet.create({
   filterChipText: {
     fontFamily: FONT_SANS,
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   clearFilterBanner: {
     padding: 10,
-    borderRadius: 12,
+    borderRadius: 6,
     marginBottom: 8,
     alignItems: 'center',
   },
@@ -2080,10 +2081,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   directoryCard: {
-    borderRadius: 16,
+    borderRadius: 8,
     borderWidth: 1,
-    padding: 14,
-    marginBottom: 10,
+    padding: 12,
+    marginBottom: 8,
   },
   directoryTop: {
     flexDirection: 'row',
@@ -2109,9 +2110,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
   },
   dirActionText: {
     fontFamily: FONT_SANS,
@@ -2120,8 +2121,8 @@ const styles = StyleSheet.create({
   },
   hubBtn: {
     marginTop: 10,
-    height: 48, // h-12
-    borderRadius: 16, // rounded-2xl
+    height: 42,
+    borderRadius: 6,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -2132,9 +2133,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   optBtn: {
-    paddingHorizontal: 14,
-    height: 40,
-    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 36,
+    borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2145,22 +2146,22 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   primaryActionBtn: {
-    height: 48, // h-12
-    borderRadius: 16, // rounded-2xl
+    height: 42,
+    borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },
   primaryActionBtnText: {
     fontFamily: FONT_SANS,
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
   },
   settingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     gap: 12,
   },
@@ -2168,15 +2169,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   togglePill: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
     borderWidth: 1,
   },
   togglePillText: {
-    fontFamily: FONT_MONO,
+    fontFamily: FONT_SANS,
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   modalBackdrop: {
     flex: 1,
@@ -2186,23 +2187,23 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 440,
     alignSelf: 'center',
-    borderTopLeftRadius: 24, // rounded-3xl
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
     borderWidth: 1,
-    padding: 20,
+    padding: 16,
   },
   menuHeaderTitle: {
     fontFamily: FONT_SANS,
-    fontSize: 13,
-    fontWeight: '700',
-    marginBottom: 12,
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 10,
   },
   menuOption: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     padding: 12,
-    borderRadius: 16, // rounded-2xl
+    borderRadius: 6,
     borderWidth: 1,
     marginBottom: 8,
   },
@@ -2217,7 +2218,7 @@ const styles = StyleSheet.create({
   },
   menuOptionSub: {
     fontFamily: FONT_SANS,
-    fontSize: 11,
+    fontSize: 12,
     marginTop: 2,
   },
   inputLabel: {
@@ -2230,37 +2231,37 @@ const styles = StyleSheet.create({
   errorText: {
     fontFamily: FONT_SANS,
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '500',
     marginVertical: 6,
   },
   modalBtnRow: {
     flexDirection: 'row',
-    gap: 10,
-    marginTop: 16,
+    gap: 8,
+    marginTop: 14,
   },
   secondaryModalBtn: {
     flex: 1,
-    height: 48, // h-12
-    borderRadius: 16, // rounded-2xl
+    height: 42,
+    borderRadius: 6,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   secondaryModalBtnText: {
     fontFamily: FONT_SANS,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
   },
   primaryModalBtn: {
     flex: 1.5,
-    height: 48, // h-12
-    borderRadius: 16, // rounded-2xl
+    height: 42,
+    borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },
   instructionBox: {
     padding: 12,
-    borderRadius: 14,
+    borderRadius: 6,
     borderWidth: 1,
     marginTop: 10,
   },

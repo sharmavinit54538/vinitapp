@@ -1,5 +1,6 @@
 import { API_BASE_URL, authClient } from '../../../lib/auth-api';
 import { PayrollApiErrorPayload, PayrollQueryParams } from '../../types/payroll';
+import { localMockFetch } from '../local-mock-engine';
 
 export class PayrollApiError extends Error {
   public readonly statusCode: number;
@@ -55,7 +56,7 @@ export class PayrollHttpClient {
 
   private getFetchImpl(): typeof fetch {
     if (this.customFetch) return this.customFetch;
-    return globalThis.fetch.bind(globalThis);
+    return localMockFetch;
   }
 
   private buildHeaders(extraHeaders?: Record<string, string>, isMultipart = false): Record<string, string> {

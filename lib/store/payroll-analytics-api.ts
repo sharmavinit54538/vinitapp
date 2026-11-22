@@ -5,6 +5,7 @@ import {
   PayrollRole,
 } from '@/lib/payroll-analytics-types';
 import { authClient, API_BASE_URL } from '@/lib/auth-api';
+import { localMockFetch } from '@/src/services/local-mock-engine';
 
 const PAYROLL_API_BASE = `${API_BASE_URL}/api/v1/hr/payroll-analytics`;
 
@@ -12,6 +13,7 @@ export const payrollAnalyticsApi = createApi({
   reducerPath: 'payrollAnalyticsApi',
   baseQuery: fetchBaseQuery({
     baseUrl: PAYROLL_API_BASE,
+    fetchFn: localMockFetch,
     prepareHeaders: (headers) => {
       const token = authClient.getAccessToken();
       if (token) {

@@ -162,16 +162,7 @@ export function HolidayDashboardModule({
             onChange={(e) => setEntityFilter(e.target.value)}
             placeholder="Entity filter"
             aria-label="Filter dashboard by entity"
-            className="h-9 w-28 px-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs"
           />
-          <button
-            type="button"
-            onClick={() => void loadSummary()}
-            className="h-9 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold inline-flex items-center gap-1.5"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>Refresh</span>
-          </button>
         </div>
       </div>
 

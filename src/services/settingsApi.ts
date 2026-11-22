@@ -1,4 +1,3 @@
-import { API_BASE_URL, authClient } from '../../lib/auth-api';
 import {
   CompanyDetailsStepData,
   WorkspaceConfigStepData,
@@ -16,34 +15,29 @@ export interface SaveWorkspaceSettingsResponse {
   message: string;
 }
 
+const WORKSPACE_SETTINGS_STORAGE_KEY = 'ofc360_local_workspace_settings_v1';
+
 export const settingsApi = {
   async saveCompanyAndWorkspaceSettings(
     payload: SaveWorkspaceSettingsPayload
   ): Promise<SaveWorkspaceSettingsResponse> {
-    const token = authClient.getAccessToken();
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-    };
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-    }
-
-    const response = await fetch(
-      `${API_BASE_URL}/api/v1/hr/workspace-onboarding/settings`,
-      {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(payload),
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        window.localStorage.setItem(
+          WORKSPACE_SETTINGS_STORAGE_KEY,
+          JSON.stringify(payload)
+        );
+      } catch {
+        // Ignore storage quota issues in demo mode
       }
-    );
-
-    if (!response.ok) {
-      throw new Error(
-        `Failed to save company and workspace settings (${response.status})`
-      );
     }
 
-    return (await response.json()) as SaveWorkspaceSettingsResponse;
+    return {
+      status: 'saved',
+      companyName: payload.company.companyName || 'OFC360 Technologies Pvt. Ltd.',
+      departmentsCount: payload.workspaceConfig.departments?.length || 4,
+      message: 'Company and workspace settings saved locally.',
+    };
   },
 };
+

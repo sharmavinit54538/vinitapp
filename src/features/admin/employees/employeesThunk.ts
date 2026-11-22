@@ -1,6 +1,9 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { z } from 'zod';
-import { API_BASE_URL, authClient } from '@/lib/auth-api';
+import {
+  getAdminEmployeesStore,
+  setAdminEmployeesStore,
+} from '@/lib/admin-workforce-store';
 
 export type EmployeeSystemRole =
   | 'Employee'
@@ -98,19 +101,7 @@ export interface AdminEmployeeRecord extends AdminEmployeeFormValues {
 export const fetchAdminEmployeesThunk = createAsyncThunk<AdminEmployeeRecord[]>(
   'adminEmployees/fetchAll',
   async () => {
-    const token = authClient.getAccessToken();
-    const headers: Record<string, string> = { Accept: 'application/json' };
-    if (token) headers.Authorization = `Bearer ${token}`;
-
-    const res = await fetch(`${API_BASE_URL}/api/v1/hr/admin-employees`, {
-      method: 'GET',
-      headers,
-    });
-    if (!res.ok) {
-      throw new Error(`Failed to fetch employees (${res.status})`);
-    }
-    const data = (await res.json()) as { items?: AdminEmployeeRecord[] };
-    return Array.isArray(data.items) ? data.items : [];
+    return [...getAdminEmployeesStore()];
   }
 );
 
@@ -118,59 +109,32 @@ export const createAdminEmployeeThunk = createAsyncThunk<
   AdminEmployeeRecord,
   AdminEmployeeFormValues
 >('adminEmployees/createOne', async (payload) => {
-  const token = authClient.getAccessToken();
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
+  const current = getAdminEmployeesStore();
+  const created: AdminEmployeeRecord = {
+    ...payload,
+    id: `emp-${Date.now()}`,
+    fullName: `${payload.firstName.trim()} ${payload.lastName.trim()}`.trim(),
+    status: payload.sendOnboardingInvite ? 'INVITED' : 'ACTIVE',
+    createdAt: new Date().toISOString(),
   };
-  if (token) headers.Authorization = `Bearer ${token}`;
-
-  const res = await fetch(`${API_BASE_URL}/api/v1/hr/admin-employees`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) {
-    const errBody = (await res.json().catch(() => ({}))) as {
-      message?: string;
-    };
-    throw new Error(
-      errBody.message || `Failed to create employee (${res.status})`
-    );
-  }
-  const data = (await res.json()) as { employee: AdminEmployeeRecord };
-  return data.employee;
+  setAdminEmployeesStore([created, ...current]);
+  return created;
 });
 
 export const bulkImportAdminEmployeesThunk = createAsyncThunk<
   AdminEmployeeRecord[],
   AdminEmployeeFormValues[]
 >('adminEmployees/bulkImport', async (rows) => {
-  const token = authClient.getAccessToken();
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
-  };
-  if (token) headers.Authorization = `Bearer ${token}`;
-
-  const res = await fetch(
-    `${API_BASE_URL}/api/v1/hr/admin-employees/bulk-import`,
-    {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ items: rows }),
-    }
-  );
-  if (!res.ok) {
-    const errBody = (await res.json().catch(() => ({}))) as {
-      message?: string;
-    };
-    throw new Error(
-      errBody.message || `Bulk employee import failed (${res.status})`
-    );
-  }
-  const data = (await res.json()) as { items: AdminEmployeeRecord[] };
-  return Array.isArray(data.items) ? data.items : [];
+  const current = getAdminEmployeesStore();
+  const added: AdminEmployeeRecord[] = rows.map((row, idx) => ({
+    ...row,
+    id: `emp-${Date.now()}-${idx}`,
+    fullName: `${row.firstName.trim()} ${row.lastName.trim()}`.trim(),
+    status: row.sendOnboardingInvite ? 'INVITED' : 'ACTIVE',
+    createdAt: new Date().toISOString(),
+  }));
+  setAdminEmployeesStore([...added, ...current]);
+  return added;
 });
 
 export function parseEmployeesCsv(csvText: string): {

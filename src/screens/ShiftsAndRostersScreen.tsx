@@ -1,13 +1,7 @@
+'use client';
+
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  Pressable,
-  TextInput,
-  Modal,
-  StyleSheet,
-} from 'react-native';
-import { getPalette, FONT_SANS, FONT_MONO } from '../theme/colors';
+import { Plus, Search, X } from 'lucide-react';
 import {
   ShiftItem,
   RosterEntry,
@@ -18,6 +12,10 @@ import {
   useSaveShiftMutation,
   useAssignRosterShiftMutation,
 } from '@/lib/store/hr-api';
+import {
+  LinkedInEmptyState,
+  LinkedInSection,
+} from '@/src/components/linkedin/LinkedInPrimitives';
 
 interface ShiftsAndRostersScreenProps {
   mode: 'shifts' | 'rosters';
@@ -28,17 +26,21 @@ interface ShiftsAndRostersScreenProps {
   onSuccessToast: (msg: string) => void;
 }
 
-const SHIFT_CODES: ('MS' | 'GS' | 'NS' | 'FLX' | 'OFF')[] = ['GS', 'MS', 'NS', 'FLX', 'OFF'];
+const SHIFT_CODES: ('MS' | 'GS' | 'NS' | 'FLX' | 'OFF')[] = [
+  'GS',
+  'MS',
+  'NS',
+  'FLX',
+  'OFF',
+];
 
 export function ShiftsAndRostersScreen({
   mode,
   shifts,
   rosters,
-  isDark,
   canManage,
   onSuccessToast,
 }: ShiftsAndRostersScreenProps) {
-  const palette = getPalette(isDark);
   const [saveShift, { isLoading: isSavingShift }] = useSaveShiftMutation();
   const [assignRosterShift] = useAssignRosterShiftMutation();
 
@@ -82,7 +84,8 @@ export function ShiftsAndRostersScreen({
     setIsModalOpen(true);
   };
 
-  const handleSaveShift = async () => {
+  const handleSaveShift = async (e: React.FormEvent) => {
+    e.preventDefault();
     setErrorMsg(null);
     const parsed = shiftFormSchema.safeParse({
       name,
@@ -135,513 +138,277 @@ export function ShiftsAndRostersScreen({
 
   if (mode === 'shifts') {
     return (
-      <View style={styles.stack}>
-        <View
-          style={[
-            styles.card,
-            { backgroundColor: palette.surface, borderColor: palette.border },
-          ]}
-        >
-          <View style={styles.headerRow}>
-            <View style={styles.titleWrap}>
-              <Text style={[styles.title, { color: palette.textPrimary }]}>
-                Shift Windows & Allowances
-              </Text>
-              <Text style={[styles.subtitle, { color: palette.textMuted }]}>
-                Active enterprise shift configurations
-              </Text>
-            </View>
+      <div className="flex flex-col gap-2 md:gap-3">
+        <LinkedInSection>
+          <div className="flex items-center justify-between gap-3 px-4 py-4 border-b border-[#E5E7EB]">
+            <div className="min-w-0">
+              <h2 className="text-[16px] font-semibold text-[#171717] tracking-[-0.01em]">
+                Shift windows
+              </h2>
+              <p className="mt-0.5 text-[12px] text-[#666666]">
+                Active shift timings, breaks, and allowances
+              </p>
+            </div>
             {canManage ? (
-              <Pressable
-                onPress={openCreateShift}
-                style={[styles.primaryBtn, { backgroundColor: palette.primary }]}
+              <button
+                type="button"
+                onClick={openCreateShift}
+                className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md bg-[#0A66C2] px-3.5 text-[13px] font-semibold text-white hover:bg-[#004182] transition-colors cursor-pointer"
               >
-                <Text style={styles.primaryBtnText}>+ Create Shift</Text>
-              </Pressable>
+                <Plus className="h-4 w-4" strokeWidth={2.2} />
+                Create shift
+              </button>
             ) : null}
-          </View>
+          </div>
 
           {shifts.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={[styles.emptyTitle, { color: palette.textPrimary }]}>
-                No Shift Windows Configured
-              </Text>
-              <Text style={[styles.emptySub, { color: palette.textMuted }]}>
-                Tap &ldquo;+ Create Shift&rdquo; to configure Morning, General, or Night shift windows.
-              </Text>
-            </View>
+            <LinkedInEmptyState
+              title="No shift windows configured"
+              subtitle="Use Create shift to configure Morning, General, or Night shift windows."
+              variant="neutral"
+            />
           ) : (
-            shifts.map((s, idx) => (
-              <View
-                key={s.id}
-                style={[
-                  styles.itemRow,
-                  idx > 0
-                    ? { borderTopWidth: 1, borderTopColor: palette.borderSubtle }
-                    : null,
-                ]}
-              >
-                <View style={styles.itemHeader}>
-                  <View style={styles.titleWrap}>
-                    <Text style={[styles.itemName, { color: palette.textPrimary }]}>
-                      {s.name} · <Text style={styles.monoInline}>{s.code}</Text>
-                    </Text>
-                    <Text style={[styles.itemMeta, { color: palette.textMuted }]}>
-                      <Text style={styles.monoInline}>{s.startTime} – {s.endTime}</Text> · Break: {s.breakDuration} · {s.status}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.itemFooter}>
-                  <Text style={[styles.itemMeta, { color: palette.textSecondary }]}>
-                    <Text style={styles.monoInline}>{s.assignedEmployees}</Text> Assigned · Allowance: <Text style={styles.monoInline}>{s.allowance}</Text>
-                  </Text>
+            <div className="divide-y divide-[#E5E7EB]">
+              {shifts.map((s) => (
+                <div
+                  key={s.id}
+                  className="flex items-center justify-between gap-3 px-4 py-3.5"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[14px] font-semibold text-[#171717]">
+                      {s.name}{' '}
+                      <span className="font-normal text-[#666666] tabular-nums">
+                        · {s.code}
+                      </span>
+                    </p>
+                    <p className="mt-0.5 text-[12px] text-[#666666] tabular-nums">
+                      {s.startTime} – {s.endTime} · Break: {s.breakDuration} · {s.status}
+                    </p>
+                    <p className="mt-1 text-[12px] text-[#404040] tabular-nums">
+                      {s.assignedEmployees} assigned · Allowance: {s.allowance}
+                    </p>
+                  </div>
                   {canManage ? (
-                    <Pressable onPress={() => openEditShift(s)}>
-                      <Text style={[styles.editLink, { color: palette.primary }]}>Edit</Text>
-                    </Pressable>
+                    <button
+                      type="button"
+                      onClick={() => openEditShift(s)}
+                      className="h-8 shrink-0 rounded-md px-2.5 text-[13px] font-semibold text-[#0A66C2] hover:bg-[#F3F2EF] transition-colors cursor-pointer"
+                    >
+                      Edit
+                    </button>
                   ) : null}
-                </View>
-              </View>
-            ))
+                </div>
+              ))}
+            </div>
           )}
-        </View>
+        </LinkedInSection>
 
-        <Modal
-          visible={isModalOpen}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setIsModalOpen(false)}
-        >
-          <View style={[styles.sheetBackdrop, { backgroundColor: palette.overlay }]}>
-            <View
-              style={[
-                styles.bottomSheet,
-                { backgroundColor: palette.surface, borderColor: palette.border },
-              ]}
+        {isModalOpen ? (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={editingShift ? 'Edit shift window' : 'Create shift window'}
+            className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/45 md:p-4"
+            onClick={() => setIsModalOpen(false)}
+          >
+            <form
+              onSubmit={handleSaveShift}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-[460px] bg-white rounded-t-lg md:rounded-lg border border-[#E5E7EB] overflow-hidden"
             >
-              <View style={styles.handleWrap}>
-                <View style={[styles.handleBar, { backgroundColor: palette.handleBar }]} />
-              </View>
-              <Text style={[styles.title, { color: palette.textPrimary }]}>
-                {editingShift ? 'Edit Shift Window' : 'Create Shift Window'}
-              </Text>
-              {errorMsg ? (
-                <Text style={[styles.errText, { color: palette.rose }]}>{errorMsg}</Text>
-              ) : null}
-
-              <Text style={[styles.label, { color: palette.textSecondary }]}>Shift Name *</Text>
-              <TextInput
-                value={name}
-                onChangeText={setName}
-                placeholder="Morning Shift"
-                placeholderTextColor={palette.textMuted}
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: palette.inputBg,
-                    borderColor: palette.border,
-                    color: palette.textPrimary,
-                  },
-                ]}
-              />
-
-              <View style={styles.row}>
-                <View style={styles.col}>
-                  <Text style={[styles.label, { color: palette.textSecondary }]}>Code *</Text>
-                  <TextInput
-                    value={code}
-                    onChangeText={setCode}
-                    placeholder="MS"
-                    placeholderTextColor={palette.textMuted}
-                    style={[
-                      styles.monoInput,
-                      {
-                        backgroundColor: palette.inputBg,
-                        borderColor: palette.border,
-                        color: palette.textPrimary,
-                      },
-                    ]}
-                  />
-                </View>
-                <View style={styles.col}>
-                  <Text style={[styles.label, { color: palette.textSecondary }]}>Headcount *</Text>
-                  <TextInput
-                    value={assignedEmployees}
-                    onChangeText={setAssignedEmployees}
-                    keyboardType="numeric"
-                    placeholder="30"
-                    placeholderTextColor={palette.textMuted}
-                    style={[
-                      styles.monoInput,
-                      {
-                        backgroundColor: palette.inputBg,
-                        borderColor: palette.border,
-                        color: palette.textPrimary,
-                      },
-                    ]}
-                  />
-                </View>
-              </View>
-
-              <View style={styles.row}>
-                <View style={styles.col}>
-                  <Text style={[styles.label, { color: palette.textSecondary }]}>Start Time *</Text>
-                  <TextInput
-                    value={startTime}
-                    onChangeText={setStartTime}
-                    placeholder="06:00 AM"
-                    placeholderTextColor={palette.textMuted}
-                    style={[
-                      styles.monoInput,
-                      {
-                        backgroundColor: palette.inputBg,
-                        borderColor: palette.border,
-                        color: palette.textPrimary,
-                      },
-                    ]}
-                  />
-                </View>
-                <View style={styles.col}>
-                  <Text style={[styles.label, { color: palette.textSecondary }]}>End Time *</Text>
-                  <TextInput
-                    value={endTime}
-                    onChangeText={setEndTime}
-                    placeholder="03:00 PM"
-                    placeholderTextColor={palette.textMuted}
-                    style={[
-                      styles.monoInput,
-                      {
-                        backgroundColor: palette.inputBg,
-                        borderColor: palette.border,
-                        color: palette.textPrimary,
-                      },
-                    ]}
-                  />
-                </View>
-              </View>
-
-              <View style={styles.modalActions}>
-                <Pressable
-                  onPress={() => setIsModalOpen(false)}
-                  style={[
-                    styles.cancelBtn,
-                    { backgroundColor: palette.inputBg, borderColor: palette.border },
-                  ]}
+              <div className="flex items-center justify-between border-b border-[#E5E7EB] px-4 h-13">
+                <h3 className="text-[15px] font-semibold text-[#171717]">
+                  {editingShift ? 'Edit shift window' : 'Create shift window'}
+                </h3>
+                <button
+                  type="button"
+                  aria-label="Close shift form"
+                  onClick={() => setIsModalOpen(false)}
+                  className="flex h-9 w-9 items-center justify-center rounded-md text-[#404040] hover:bg-[#F3F2EF] cursor-pointer"
                 >
-                  <Text style={[styles.cancelBtnText, { color: palette.textSecondary }]}>
-                    Cancel
-                  </Text>
-                </Pressable>
-                <Pressable
-                  onPress={handleSaveShift}
+                  <X className="h-4 w-4" strokeWidth={2} />
+                </button>
+              </div>
+
+              <div className="p-4 space-y-3">
+                {errorMsg ? (
+                  <div
+                    role="alert"
+                    className="rounded-md border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-[12px] font-medium text-[#B91C1C]"
+                  >
+                    {errorMsg}
+                  </div>
+                ) : null}
+
+                <div>
+                  <label htmlFor="shift-name" className="block text-[12px] font-medium text-[#404040] mb-1">
+                    Shift name *
+                  </label>
+                  <input
+                    id="shift-name"
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Morning Shift"
+                    className="h-10 w-full rounded-md border border-[#E5E7EB] px-3 text-[13px] text-[#171717] focus:border-[#0A66C2] focus:outline-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="shift-code" className="block text-[12px] font-medium text-[#404040] mb-1">
+                      Code *
+                    </label>
+                    <input
+                      id="shift-code"
+                      type="text"
+                      value={code}
+                      onChange={(e) => setCode(e.target.value)}
+                      placeholder="MS"
+                      className="h-10 w-full rounded-md border border-[#E5E7EB] px-3 text-[13px] text-[#171717] focus:border-[#0A66C2] focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="shift-headcount" className="block text-[12px] font-medium text-[#404040] mb-1">
+                      Headcount *
+                    </label>
+                    <input
+                      id="shift-headcount"
+                      type="number"
+                      value={assignedEmployees}
+                      onChange={(e) => setAssignedEmployees(e.target.value)}
+                      placeholder="30"
+                      className="h-10 w-full rounded-md border border-[#E5E7EB] px-3 text-[13px] text-[#171717] tabular-nums focus:border-[#0A66C2] focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="shift-start" className="block text-[12px] font-medium text-[#404040] mb-1">
+                      Start time *
+                    </label>
+                    <input
+                      id="shift-start"
+                      type="text"
+                      value={startTime}
+                      onChange={(e) => setStartTime(e.target.value)}
+                      placeholder="09:30 AM"
+                      className="h-10 w-full rounded-md border border-[#E5E7EB] px-3 text-[13px] text-[#171717] tabular-nums focus:border-[#0A66C2] focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="shift-end" className="block text-[12px] font-medium text-[#404040] mb-1">
+                      End time *
+                    </label>
+                    <input
+                      id="shift-end"
+                      type="text"
+                      value={endTime}
+                      onChange={(e) => setEndTime(e.target.value)}
+                      placeholder="06:30 PM"
+                      className="h-10 w-full rounded-md border border-[#E5E7EB] px-3 text-[13px] text-[#171717] tabular-nums focus:border-[#0A66C2] focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 border-t border-[#E5E7EB] px-4 py-3">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="h-9 rounded-md border border-[#E5E7EB] bg-white px-4 text-[13px] font-medium text-[#171717] hover:bg-[#F3F2EF] cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
                   disabled={isSavingShift}
-                  style={[styles.saveBtn, { backgroundColor: palette.primary }]}
+                  className="h-9 rounded-md bg-[#0A66C2] px-4 text-[13px] font-semibold text-white hover:bg-[#004182] disabled:opacity-50 cursor-pointer"
                 >
-                  <Text style={styles.primaryBtnText}>
-                    {isSavingShift ? 'Saving...' : 'Save Shift'}
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
-          </View>
-        </Modal>
-      </View>
+                  {isSavingShift ? 'Saving...' : 'Save shift'}
+                </button>
+              </div>
+            </form>
+          </div>
+        ) : null}
+      </div>
     );
   }
 
   return (
-    <View style={styles.stack}>
-      <View
-        style={[
-          styles.card,
-          { backgroundColor: palette.surface, borderColor: palette.border },
-        ]}
-      >
-        <Text style={[styles.title, { color: palette.textPrimary }]}>
-          Weekly Duty Rosters
-        </Text>
-        <Text style={[styles.subtitle, { color: palette.textMuted, marginBottom: 12 }]}>
-          Tap any day chip to cycle employee shift assignment
-        </Text>
+    <div className="flex flex-col gap-2 md:gap-3">
+      <LinkedInSection>
+        <div className="px-4 pt-4 pb-3 border-b border-[#E5E7EB]">
+          <h2 className="text-[16px] font-semibold text-[#171717] tracking-[-0.01em]">
+            Weekly duty rosters
+          </h2>
+          <p className="mt-0.5 text-[12px] text-[#666666]">
+            Select any day cell to cycle employee shift assignment
+          </p>
 
-        <TextInput
-          value={rosterSearch}
-          onChangeText={setRosterSearch}
-          placeholder="Search employee roster..."
-          placeholderTextColor={palette.textMuted}
-          style={[
-            styles.input,
-            {
-              backgroundColor: palette.inputBg,
-              borderColor: palette.border,
-              color: palette.textPrimary,
-            },
-          ]}
-        />
+          <div className="relative mt-3 flex items-center">
+            <Search
+              className="pointer-events-none absolute left-3 h-4 w-4 text-[#666666]"
+              strokeWidth={1.85}
+            />
+            <input
+              type="text"
+              value={rosterSearch}
+              onChange={(e) => setRosterSearch(e.target.value)}
+              placeholder="Search employee roster"
+              aria-label="Search employee roster"
+              className="h-10 w-full rounded-md border border-[#E5E7EB] bg-[#FAFAFA] pl-9 pr-3 text-[13px] text-[#171717] placeholder:text-[#666666] focus:border-[#0A66C2] focus:bg-white focus:outline-none"
+            />
+          </div>
+        </div>
 
         {filteredRosters.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={[styles.emptyTitle, { color: palette.textPrimary }]}>
-              No Active Duty Rosters
-            </Text>
-            <Text style={[styles.emptySub, { color: palette.textMuted }]}>
-              No employee roster entries are currently assigned.
-            </Text>
-          </View>
+          <LinkedInEmptyState
+            title="No active duty rosters"
+            subtitle="No employee roster entries are currently assigned."
+            variant="neutral"
+          />
         ) : (
-          filteredRosters.map((r, idx) => (
-            <View
-              key={r.id}
-              style={[
-                styles.itemRow,
-                idx > 0
-                  ? { borderTopWidth: 1, borderTopColor: palette.borderSubtle }
-                  : null,
-              ]}
-            >
-              <Text style={[styles.itemName, { color: palette.textPrimary }]}>
-                {r.employeeName} · <Text style={styles.monoInline}>{r.employeeId}</Text>
-              </Text>
-              <Text style={[styles.itemMeta, { color: palette.textMuted }]}>
-                {r.designation} · {r.department}
-              </Text>
-              <View style={styles.dayRow}>
-                {r.schedule.map((slot) => (
-                  <Pressable
-                    key={slot.day}
-                    onPress={() => handleCycleRosterCode(r.id, slot.day, slot.shiftCode)}
-                    style={[
-                      styles.dayChip,
-                      {
-                        backgroundColor:
-                          slot.shiftCode === 'OFF' ? palette.roseBg : palette.inputBg,
-                        borderColor: palette.border,
-                      },
-                    ]}
-                  >
-                    <Text style={[styles.dayLabel, { color: palette.textMuted }]}>
-                      {slot.day}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.dayCode,
-                        {
-                          color:
-                            slot.shiftCode === 'OFF' ? palette.rose : palette.primary,
-                        },
-                      ]}
+          <div className="divide-y divide-[#E5E7EB]">
+            {filteredRosters.map((r) => (
+              <div key={r.id} className="px-4 py-3.5">
+                <p className="text-[14px] font-semibold text-[#171717]">
+                  {r.employeeName}{' '}
+                  <span className="font-normal text-[#666666] tabular-nums">
+                    · {r.employeeId}
+                  </span>
+                </p>
+                <p className="mt-0.5 text-[12px] text-[#666666]">
+                  {r.designation} · {r.department}
+                </p>
+
+                <div className="mt-2.5 grid grid-cols-7 gap-1.5">
+                  {r.schedule.map((slot) => (
+                    <button
+                      key={slot.day}
+                      type="button"
+                      onClick={() => handleCycleRosterCode(r.id, slot.day, slot.shiftCode)}
+                      className={`flex flex-col items-center justify-center rounded-md border py-2 text-center transition-colors cursor-pointer ${
+                        slot.shiftCode === 'OFF'
+                          ? 'border-[#FECACA] bg-[#FEF2F2] text-[#B91C1C]'
+                          : 'border-[#E5E7EB] bg-[#FAFAFA] text-[#0A66C2] hover:bg-[#F3F2EF]'
+                      }`}
                     >
-                      {slot.shiftCode}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            </View>
-          ))
+                      <span className="text-[10px] font-medium text-[#666666]">
+                        {slot.day}
+                      </span>
+                      <span className="mt-0.5 text-[11px] font-semibold tabular-nums">
+                        {slot.shiftCode}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         )}
-      </View>
-    </View>
+      </LinkedInSection>
+    </div>
   );
 }
-
-const styles = StyleSheet.create({
-  stack: {
-    gap: 16,
-  },
-  card: {
-    borderRadius: 24, // rounded-3xl
-    borderWidth: 1,
-    padding: 20, // p-5
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 14,
-  },
-  titleWrap: {
-    flex: 1,
-    paddingRight: 10,
-  },
-  title: {
-    fontFamily: FONT_SANS,
-    fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: -0.3,
-  },
-  subtitle: {
-    fontFamily: FONT_SANS,
-    fontSize: 12,
-    marginTop: 2,
-  },
-  primaryBtn: {
-    paddingHorizontal: 16,
-    height: 48, // h-12 touch target
-    borderRadius: 16, // rounded-2xl
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primaryBtnText: {
-    fontFamily: FONT_SANS,
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  emptyState: {
-    paddingVertical: 28,
-    alignItems: 'center',
-  },
-  emptyTitle: {
-    fontFamily: FONT_SANS,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  emptySub: {
-    fontFamily: FONT_SANS,
-    fontSize: 12,
-    textAlign: 'center',
-    marginTop: 4,
-  },
-  itemRow: {
-    paddingVertical: 14,
-  },
-  itemHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  itemName: {
-    fontFamily: FONT_SANS,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  itemMeta: {
-    fontFamily: FONT_SANS,
-    fontSize: 12,
-    marginTop: 2,
-  },
-  monoInline: {
-    fontFamily: FONT_MONO,
-    fontVariant: ['tabular-nums'],
-  },
-  itemFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 6,
-  },
-  editLink: {
-    fontFamily: FONT_SANS,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  dayRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 10,
-    gap: 4,
-  },
-  dayChip: {
-    flex: 1,
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingVertical: 8,
-    alignItems: 'center',
-  },
-  dayLabel: {
-    fontFamily: FONT_SANS,
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  dayCode: {
-    fontFamily: FONT_MONO,
-    fontSize: 11,
-    fontWeight: '700',
-    marginTop: 2,
-  },
-  sheetBackdrop: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  bottomSheet: {
-    width: '100%',
-    maxWidth: 440,
-    alignSelf: 'center',
-    borderTopLeftRadius: 24, // rounded-3xl
-    borderTopRightRadius: 24,
-    borderWidth: 1,
-    padding: 20,
-  },
-  handleWrap: {
-    alignItems: 'center',
-    paddingBottom: 10,
-  },
-  handleBar: {
-    width: 40, // w-10
-    height: 6, // h-1.5
-    borderRadius: 3,
-  },
-  label: {
-    fontFamily: FONT_SANS,
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 10,
-    marginBottom: 6,
-  },
-  input: {
-    fontFamily: FONT_SANS,
-    height: 48, // h-12
-    borderRadius: 16, // rounded-2xl
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    fontSize: 13,
-  },
-  monoInput: {
-    fontFamily: FONT_MONO,
-    fontVariant: ['tabular-nums'],
-    height: 48, // h-12
-    borderRadius: 16, // rounded-2xl
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    fontSize: 13,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  col: {
-    flex: 1,
-  },
-  errText: {
-    fontFamily: FONT_SANS,
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 6,
-  },
-  modalActions: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 16,
-  },
-  cancelBtn: {
-    flex: 1,
-    height: 48, // h-12
-    borderRadius: 16, // rounded-2xl
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelBtnText: {
-    fontFamily: FONT_SANS,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  saveBtn: {
-    flex: 1.5,
-    height: 48, // h-12
-    borderRadius: 16, // rounded-2xl
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
