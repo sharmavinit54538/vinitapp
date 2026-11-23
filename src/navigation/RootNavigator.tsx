@@ -29,6 +29,8 @@ import {
   useGetHrDashboardQuery,
   useMarkNotificationsReadMutation,
 } from '@/lib/store/hr-api';
+import { resetAttendanceSessionState } from '@/src/features/attendance/attendanceApi';
+import { setAttendanceScopeKey } from '@/src/features/attendance/attendanceSlice';
 import {
   BottomNavTab,
   MoreModuleId,
@@ -110,7 +112,26 @@ export function RootNavigator() {
     }, 3200);
   };
 
+  const activeScopeKey = useSelector(
+    (state: RootState) => state.attendanceUi.activeScopeKey
+  );
+
+  // Detect user / tenant / role changes and clear stale RTK Query cache & transient captures
+  React.useEffect(() => {
+    const cachedUser = authClient.getCachedUser();
+    const resolvedScope = cachedUser
+      ? `${cachedUser.company_name || 'default'}:${cachedUser.id || cachedUser.email}:${cachedUser.role}`
+      : `role:${ui.activeRole}`;
+    if (activeScopeKey && activeScopeKey !== resolvedScope) {
+      resetAttendanceSessionState(dispatch);
+    }
+    if (activeScopeKey !== resolvedScope) {
+      dispatch(setAttendanceScopeKey(resolvedScope));
+    }
+  }, [activeScopeKey, dispatch, ui.activeRole]);
+
   const handleLogout = () => {
+    resetAttendanceSessionState(dispatch);
     authClient.clearSession();
     void authClient.logout();
     router.push('/login');
@@ -284,10 +305,10 @@ export function RootNavigator() {
           </div>
         ) : null}
 
-        {ui.activeBottomTab === 'attendance' && fetchedData ? (
+        {ui.activeBottomTab === 'attendance' ? (
           <div className="w-full">
             <AttendanceScreen
-              data={fetchedData}
+              activeRole={ui.activeRole}
               isDark={ui.isDarkMode}
               onSuccessToast={triggerToast}
             />

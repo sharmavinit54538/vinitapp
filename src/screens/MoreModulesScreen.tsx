@@ -94,8 +94,6 @@ export function MoreModulesScreen({
           ) : activeSubModule === 'shifts_rosters' ? (
             <ShiftsAndRostersScreen
               mode="shifts"
-              shifts={data.shifts}
-              rosters={data.rosters}
               isDark={isDark}
               canManage={canManage}
               onSuccessToast={onSuccessToast}

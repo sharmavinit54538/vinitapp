@@ -100,6 +100,9 @@ export const {
 
 import departmentsReducer from '@/src/features/admin/departments/departmentsSlice';
 import employeesReducer from '@/src/features/admin/employees/employeesSlice';
+import attendanceUiReducer from '@/src/features/attendance/attendanceSlice';
+import { attendanceApi } from '@/src/features/attendance/attendanceApi';
+import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 
 export const makeHrStore = () =>
   configureStore({
@@ -107,17 +110,23 @@ export const makeHrStore = () =>
       hrMobileUi: hrMobileUiSlice.reducer,
       adminDepartments: departmentsReducer,
       adminEmployees: employeesReducer,
+      attendanceUi: attendanceUiReducer,
       [hrDashboardApi.reducerPath]: hrDashboardApi.reducer,
       [helpDeskApi.reducerPath]: helpDeskApi.reducer,
       [payrollAnalyticsApi.reducerPath]: payrollAnalyticsApi.reducer,
+      [attendanceApi.reducerPath]: attendanceApi.reducer,
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware()
         .concat(hrDashboardApi.middleware)
         .concat(helpDeskApi.middleware)
-        .concat(payrollAnalyticsApi.middleware),
+        .concat(payrollAnalyticsApi.middleware)
+        .concat(attendanceApi.middleware),
   });
 
 export type AppStore = ReturnType<typeof makeHrStore>;
 export type RootState = ReturnType<AppStore['getState']>;
 export type AppDispatch = AppStore['dispatch'];
+
+export const useAppDispatch = () => useDispatch<AppDispatch>();
+export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;

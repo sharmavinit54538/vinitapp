@@ -4,7 +4,6 @@ import React, { useMemo, useState } from 'react';
 import {
   Activity,
   AlertOctagon,
-  ArrowLeft,
   BarChart3,
   Bell,
   CalendarClock,
@@ -318,14 +317,6 @@ export function AttendanceAnalyticsWorkspaceShell({
     employmentType: '',
   });
 
-  const activeMeta = useMemo(
-    () =>
-      ATTENDANCE_ANALYTICS_MODULES_REGISTRY.find(
-        (m) => m.id === activeModule
-      ) || ATTENDANCE_ANALYTICS_MODULES_REGISTRY[0],
-    [activeModule]
-  );
-
   const groupedCards = useMemo(
     () => [
       {
@@ -542,44 +533,6 @@ export function AttendanceAnalyticsWorkspaceShell({
                   Reset Filters
                 </button>
               </div>
-            </div>
-            {/* Horizontal Pill Navigation */}
-            <div className="flex items-center gap-1.5 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-xs">
-              <button
-                type="button"
-                onClick={() => setShowDirectory(true)}
-                className="inline-flex shrink-0 items-center gap-1 rounded-xl bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200"
-              >
-                <ArrowLeft className="h-3.5 w-3.5" />
-                23 Modules
-              </button>
-              {ATTENDANCE_ANALYTICS_MODULES_REGISTRY.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => setActiveModule(m.id)}
-                  className={`shrink-0 rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${
-                    activeModule === m.id
-                      ? 'bg-indigo-600 text-white shadow-xs'
-                      : 'text-slate-600 hover:bg-slate-100'
-                  }`}
-                >
-                  {m.title}
-                </button>
-              ))}
-            </div>
-
-            {/* Active Module Banner */}
-            <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-xs">
-              <div>
-                <h2 className="text-sm font-bold text-slate-900">
-                  {activeMeta.title}
-                </h2>
-                <p className="text-xs text-slate-500">{activeMeta.subtitle}</p>
-              </div>
-              <span className="rounded-lg bg-slate-100 px-2.5 py-1 font-mono text-[11px] font-semibold text-slate-600">
-                /api/v1/attendance-analytics/{activeMeta.id}
-              </span>
             </div>
 
             {renderActiveModule()}

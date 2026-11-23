@@ -1,0 +1,194 @@
+OFC360 Attendance frontend integration with Redux Toolkit
+Implement the attendance integration in my existing OFC360 frontend. Edit the code and run the checks you can execute. Start from the current screens, navigation, authentication client and store. Preserve the app’s platform and UI. For React Native or Expo, use its existing native navigation, camera, permissions and app lifecycle. For a React web frontend, use its existing browser and SSR patterns. All employee records, shifts, attendance states, counts and charts shown to users must come from the backend.
+
+This prompt includes the request contract extracted from apiofc360-dev(3).zip. It contains 54 distinct method/path pairs under /api/v1/attendance, 12 attendance-monitoring operations and 19 related routes, including compatibility aliases. Verify the current backend revision if available. Trace app/main.py, app/api/v1/router.py, app/api/v2/router.py, app/routers/attendance.py and app/attendance/routers/. Check the selected handler, its service and its request parser. For raw Request or dict handlers, OpenAPI can omit accepted fields. If only the frontend is available, implement from this contract, verify against an authorized local or staging backend where available, and name the checks that still need a running service.
+Implement the employee flow
+1. On opening attendance, load GET /api/v1/attendance/face-status and GET /api/v1/attendance/face/me. Show the employee name from data.employee.first_name and last_name when available. Handle a missing employee profile, no record today, permission denial and a failed request as distinct states. Refetch on foreground or screen focus and after mutations. Use the company business timezone for dates and overnight shifts.
+2. For first enrollment, capture a fresh image after a user gesture and call POST /api/v1/attendance/face-enroll. On success refetch enrollment and today. Enrollment and punching are separate actions. For each punch or break endpoint that requires a capture, supply a fresh image. Offer replacement enrollment only through an explicit user action.
+3. Use one punch API per action. The V1 biometric flow uses /face/check-in and /face/check-out. If the existing mobile flow uses the V2 PWA contract, keep both punches on that contract. Do not send both requests or fall back to the legacy core punch on an error. The V1 break endpoints and V1 enrollment remain separate calls. An optional geofence precheck displays the server’s verdict. Its HTTP success alone does not establish that the user is inside the boundary.
+4. Drive the buttons from data.checked_in, data.checked_out, data.is_on_break and the returned active break. Display server times, durations and status. A rejected or timed-out request must not mark the employee present or checked out. Suppress rapid double taps. On an uncertain write or duplicate response, refetch today before presenting another action. V2 supports replaying the same logical request with its original payload and key. Generate a new key for a new action.
+5. Open the camera only for the selected action. Stop tracks or release the native camera on capture completion, cancel, error, navigation, background or unmount. Cancel geolocation watches when done. Handle permissions being denied, GPS being unavailable, low accuracy and a face mismatch with actionable messages. Never send dummy coordinates, a cached photo, a client-computed face match or a hardcoded employee ID.
+6. Wire personal history with server pagination. Use /face/history without employee_id for the employee. Use /face/team for direct reports and /face/company only for an authorized company view. Keep platform-owner screens separate from tenant attendance. Connect existing shift, roster, regularization, monitoring and export controls to the matching rows below. Give each existing action a real route or an explicit unavailable state with the missing backend capability in the handoff.
+Implement the Redux layer
+- Reuse the app’s Redux Toolkit store and RTK Query base API. If Redux is absent, add @reduxjs/toolkit and react-redux, one store and provider, the API reducer and middleware, and typed hooks where the project uses TypeScript. Extend the base API with injectEndpoints when available. Keep only UI selections in a normal slice. Page results, today’s state and lists belong in the RTK Query cache.
+- Use the configured API origin or existing proxy. Preserve the version exactly once, including on V2 requests. Reuse the normal transport with Authorization: Bearer <access token>. Reuse the existing refresh flow, including its HttpOnly cookie and platform-specific credentials handling. Coalesce concurrent refreshes. Retry safe reads after a successful refresh and reconcile uncertain mutations before any retry. A 403 is a permission or business result, with its server message.
+- Include dates, filters, pagination and applicable user/tenant scope in cache identity. Pause protected queries until session and tenant resolution completes. Clear the API cache and stale in-flight screen state on logout, tenant switch or user change. During SSR, scope the store to the request and initialize device APIs on the client.
+- Keep raw images, base64, camera handles, precise capture coordinates, refresh tokens and private image URLs out of persisted state, logs, Redux DevTools and crash reporting. For face uploads use an in-memory capture transport with the shared auth client, then invalidate RTK Query tags. Alternatively dispatch an opaque short-lived capture ID and release its in-memory payload after the request. Avoid passing the raw capture in a thunk or RTK mutation argument visible to action loggers. Project response fields for the UI before caching sensitive records. Handle authenticated export bytes outside persisted Redux state.
+- Build endpoint-specific types and response parsing. Support the success envelope’s data, nullable values, paginated data.items, binary downloads, and actual error shapes including code, message, errors[] and string/object/list detail. Preserve field-level 422 errors, handle 401/403/404/409/429 and network failures, and honor Retry-After when provided. Show an empty state only after a successful empty result.
+Screen and cache wiring
+Use these RTK Query tag names if the store has no equivalent. Include the active tenant and user scope as well as the filters and page in each list cache key. Use a narrower entity tag when a single affected record is known.
+UI action	Request and data	Cache behavior
+Open My Attendance	Query face-status and face/me under the V1 attendance base	Provide FaceEnrollment and AttendanceToday
+Enroll or explicitly replace a face	Post enrollment with the transient capture	Invalidate FaceEnrollment and AttendanceToday after success
+Check in, check out or take a break	Send one matching mutation. Read the resulting state from face/me	Invalidate AttendanceToday, AttendanceHistory and affected team/company or summary tags
+Open history or change date range	Query face/history, face/team or face/company for its proper scope	Cache by scope, filters and page. Reset page on filter change
+Edit a punch or submit a correction	Send the manual edit or regularization request	Refresh the affected attendance or request list. Preserve pending review status
+Change a shift or roster	Send one create, edit or bulk mutation	Refresh affected Shifts, Rosters and MySchedule entries. A submitted shift change remains pending
+
+
+Request bodies
+JSON rows use application/json. Send real runtime values and omit unused optional keys. Dates are YYYY-MM-DD, timestamps are ISO 8601 with a timezone, and IDs described as UUIDs are backend IDs. For multipart send a real file with a filename, let the transport generate the boundary, and serialize scalar form values as text. Common auth is described above.
+Body profile	Required fields	Optional fields and rules
+Enrollment	image_base64 string	allow_re_enroll boolean, default false. JSON only. The server resolves the current employee.
+Face punch, V1 JSON	image_base64 string	location object with numeric latitude, longitude and optional accuracy in metres, plus top-level notes, device_info, work_mode strings. Work modes are office, remote and field. Check-in can reject missing GPS. Client IP comes from the request connection.
+Face punch, V1 multipart	file binary	Flat form fields latitude, longitude, accuracy, notes, device_info, work_mode. Provide the latitude and longitude together. V1 check-in reads an optional Idempotency-Key header. Verified replay is a separate V2 contract.
+Break capture	JSON image_base64 string or multipart file binary	JSON supports location with latitude, longitude, optional accuracy, plus notes and device_info. Multipart supports top-level latitude, longitude, accuracy, notes and device_info. Start and end both require a capture. The multipart break parser accepts jpg/jpeg/png/webp and a maximum file size of 10 MiB.
+Geofence	Top-level latitude number, longitude number	accuracy number in metres. Read data.inside_geofence, data.status and data.message.
+Mobile punch, V2 PWA	Top-level image_base64 nonempty string, latitude number −90…90, longitude number −180…180 and header Idempotency-Key string 8–128 chars	accuracy number ≥0, notes string ≤500, device_info string ≤255, client_captured_at timestamp. JSON only. Retrying with a changed payload and the old key can produce 409. A fresh capture is a new request.
+Core check-in	JSON object. The schema declares all keys optional. Tenant policy can require image_base64.	Top-level image_base64, latitude, longitude, ip_address, device_info, notes. Use only when the existing product deliberately supports the core policy-driven workflow.
+Core check-out	JSON object. All keys are optional.	Top-level latitude, longitude, ip_address, device_info, notes. The canonical face checkout has its own required image.
+Manual edit	audit_reason string	check_in_time timestamp, check_out_time timestamp, status string. Submit a meaningful reason and actual changed values.
+Correction	request_date date, reason string	attendance_id UUID, requested_check_in timestamp, requested_check_out timestamp. Display the returned status.
+Shift change	requested_shift_id UUID, start_date date, reason string 1–1000 chars	end_date date ≥ start date. Uses the schema declared in the mounted me.py.
+Create shift	name nonblank string 1–50 chars, start_time and end_time as distinct time strings	Send 24-hour HH:MM. An end earlier than start means overnight. The handler generates code and reads these three fields.
+Edit shift	JSON object with the desired changes	name, start_time, end_time with the same formats. PUT and PATCH delegate to the same edit behavior.
+Create roster	employee_id UUID, shift_date date	shift_id UUID, shift_type string, start_time and end_time time strings, notes string. Upsert. For a working shift supply both custom times together or omit both. A selected shift can supply the times.
+Bulk roster	Nonempty employee_ids UUID array, and either nonempty dates date array or start_date plus end_date dates, inclusive	Same optional shift fields as create roster. The service caps employee count × date count at 2,000.
+Edit roster	JSON object with the desired changes	shift_date, shift_id, shift_type, start_time, end_time, notes. PUT and PATCH share a handler. Roster types in this snapshot are DAY, NIGHT, MORNING, EVENING, OVERTIME, ROTATION, HOLIDAY, OFF, WEEKLY_OFF, LEAVE, TRAINING and WFH.
+Monitor analysis	startDate, endDate as ISO date strings with these exact camel-case keys	department string. Validate date order before submission.
+Settings	JSON object	config key/value object, default empty. This handler persists recognized keys such as working_days, office_timing, timezone and currency. Verify read-after-write before offering other policy or geofence controls.
+AI shift plan	company_id UUID from authorized tenant context, period_start and period_end dates, employee_ids UUID array	department string, plan_type string (WEEKLY by default, also MONTHLY, ROTATION, HOLIDAY), constraints string and model string. This is a separate planning workflow.
+Unlock	reason string ≥2 chars and the payroll cycle UUID in the URL	The lock action takes no body. Verify the mounted version in the payroll workflow.
+
+
+Payload examples from live inputs
+The variables below represent the actual capture, GPS reading, user-entered text and active UI operation. Select the single applicable request for the current action.
+// POST /api/v1/attendance/face-enroll  (JSON)
+const enrollmentBody = { image_base64: capture.base64 }
+
+// POST /api/v1/attendance/face/check-in or /face/check-out  (JSON)
+const location = {
+  latitude: gps.latitude,
+  longitude: gps.longitude,
+  ...(gps.accuracy == null ? {} : { accuracy: gps.accuracy }),
+}
+const facePunchBody = { image_base64: capture.base64, location, work_mode: selectedWorkMode }
+
+// POST /api/v1/attendance/break/start or /break/end  (JSON)
+const breakBody = { image_base64: capture.base64, location }
+
+// POST /api/v1/attendance/geofence/verify  (JSON)
+const geofenceBody = location
+
+// POST /api/v2/pwa/attendance/check-in or /check-out  (JSON)
+const mobileHeaders = { "Idempotency-Key": logicalAction.idempotencyKey }
+const mobileBody = { image_base64: capture.base64, ...location, client_captured_at: capturedAtIso }
+
+// POST /api/v1/attendance/regularization  (JSON)
+const correctionBody = { request_date: selectedDate, reason: enteredReason }
+Endpoint inventory
+Each row is a distinct HTTP method and full path. A question mark marks an optional query or header field. Every path placeholder is required. In each JSON mutation the body object itself is required. The body profiles above list its keys. Route checks describe the handler in this snapshot. Apply the product’s tenant and screen permissions as well. The core and face routers use different RBAC helpers.
+Face attendance, shifts and rosters
+Method and full path	Request fields	Route check	Result or use
+GET /api/v1/attendance/face-status	No fields	Signed in	data.is_enrolled and data.enrolled_at
+POST /api/v1/attendance/face-enroll	JSON Enrollment	Signed in	Enrollment result, action and enrollment time
+POST /api/v1/attendance/face/check-in	Face punch · JSON or multipart · Header Idempotency-Key? (string, read by handler)	Signed in	201 with attendance record
+POST /api/v1/attendance/face/check-out	Face punch · JSON or multipart	Signed in	200 with attendance record
+GET /api/v1/attendance/shifts/me/schedule	Query start_date? (date), end_date? (date)	Signed in	employee_name, current_shift and schedule[]
+POST /api/v1/attendance/shifts/change-requests	JSON Shift change	Signed in	201 with requested dates and pending status
+GET /api/v1/attendance/face/me	No fields	Signed in	Today’s employee, shift, punches and break state
+GET /api/v1/attendance/face/history	Query start_date? (date), end_date? (date), employee_id? (UUID), page? (integer, default 1, ≥1), limit? (integer, default 20, 1–100)	Signed in	Own paginated history by default. employee_id enables a privileged filter
+GET /api/v1/attendance/face/team	Query start_date? (date), end_date? (date), page? (integer, default 1, ≥1), limit? (integer, default 20, 1–100)	Admin/manager	Direct reports. Paginated history
+GET /api/v1/attendance/face/company	Query branch? (string), department? (string), employee_id? (UUID), start_date? (date), end_date? (date), page? (integer, default 1, ≥1), limit? (integer, default 20, 1–100)	Admin	Admin company history. Paginated
+GET /api/v1/attendance/face/analytics	No fields	Admin/manager	Company face-attendance KPIs
+GET /api/v1/attendance/analytics/distribution	Query start_date? (date), end_date? (date), view_mode? (string, default week, week or month)	Admin/manager	Distribution metrics for selected period
+POST /api/v1/attendance/break/start	Break capture · JSON or multipart	Signed in	Break id, start time and status
+POST /api/v1/attendance/break/end	Break capture · JSON or multipart	Signed in	Break id, end time and duration_minutes
+POST /api/v1/attendance/geofence/verify	JSON Geofence	Signed in	Inspect data.inside_geofence, data.status and data.message
+GET /api/v1/attendance/shifts/options	No fields	Admin/manager	data.options[]
+GET /api/v1/attendance/shifts	Query search? (string), page? (integer, default 1, ≥1), limit? (integer, default 20, 1–100)	Admin/manager	Paginated shifts
+POST /api/v1/attendance/shifts	JSON Create shift	Admin	201 with the created shift
+GET /api/v1/attendance/shifts/{shift_id}	Path shift_id (UUID)	Admin/manager	One shift
+PUT /api/v1/attendance/shifts/{shift_id}	Path shift_id (UUID) · JSON Edit shift	Admin	Updated shift
+PATCH /api/v1/attendance/shifts/{shift_id}	Path shift_id (UUID) · JSON Edit shift	Admin	Updated shift
+DELETE /api/v1/attendance/shifts/{shift_id}	Path shift_id (UUID)	Admin	Deletion receipt
+GET /api/v1/attendance/rosters	Query start_date? (date), end_date? (date), employee_id? (UUID), department? (string), shift_type? (string), page? (integer, default 1, ≥1), limit? (integer, default 100, 1–100)	Admin/manager	Range and paginated roster entries
+POST /api/v1/attendance/rosters	JSON Create roster	Admin	201 with created/updated roster entry
+POST /api/v1/attendance/rosters/bulk	JSON Bulk roster	Admin	Counts for created, updated and total
+GET /api/v1/attendance/rosters/{roster_id}	Path roster_id (UUID)	Admin/manager	One roster entry
+PUT /api/v1/attendance/rosters/{roster_id}	Path roster_id (UUID) · JSON Edit roster	Admin/manager	Updated roster entry
+PATCH /api/v1/attendance/rosters/{roster_id}	Path roster_id (UUID) · JSON Edit roster	Admin/manager	Updated roster entry
+DELETE /api/v1/attendance/rosters/{roster_id}	Path roster_id (UUID)	Admin/manager	Deletion receipt
+
+
+Core attendance
+Method and full path	Request fields	Route check	Result or use
+GET /api/v1/attendance/me	No fields	Signed in	Today’s core record or null
+GET /api/v1/attendance/status	No fields	Signed in	Core check-in/out flags
+GET /api/v1/attendance/today	Query page? (integer, default 1, ≥1), limit? (integer, default 20, 1–100)	Core admin/manager	Company records for today
+GET /api/v1/attendance/history	Query from_date? (date), to_date? (date), page? (integer, default 1, ≥1), limit? (integer, default 20, 1–100)	Signed in	Core history. Use face/history for employee self-service
+GET /api/v1/attendance/team	Query page? (integer, default 1, ≥1), limit? (integer, default 20, 1–100)	Core admin/manager	Company-wide today in this snapshot. Use face/team for direct reports
+GET /api/v1/attendance/company	Query page? (integer, default 1, ≥1), limit? (integer, default 50, 1–200)	Core admin/manager	Company records
+GET /api/v1/attendance/records	Query from_date? (date), to_date? (date), status? (string), page? (integer, default 1, ≥1), limit? (integer, default 20, 1–100)	Core admin/manager	Filtered records
+GET /api/v1/attendance/analytics	Query target_date? (date)	Signed in	Company summary for the target date
+GET /api/v1/attendance/summary	Query target_date? (date)	Signed in	Company summary for the target date
+GET /api/v1/attendance/analytics/trends	Query from_date? (date), to_date? (date)	Signed in	Range with trends[]
+GET /api/v1/attendance/analytics/rate	Query from_date? (date), to_date? (date)	Signed in	Range with attendance_rate
+GET /api/v1/attendance/analytics/weekly	Query weeks? (integer, default 4, 1–12)	Signed in	Week count and weekly[]
+GET /api/v1/attendance/calendar	Query month? (integer, default 9, 1–12), year? (integer, default 2026, 2000–2100)	Signed in	Daily calendar and calendar_summary. Send the selected month and year
+GET /api/v1/attendance/late	Query page? (integer, default 1, ≥1), limit? (integer, default 20, 1–100)	Signed in	Paginated records filtered by late status
+GET /api/v1/attendance/early-leaving	Query page? (integer, default 1, ≥1), limit? (integer, default 20, 1–100)	Signed in	Unfiltered records in this snapshot. Check backend before enabling this view
+GET /api/v1/attendance/missing	Query page? (integer, default 1, ≥1), limit? (integer, default 20, 1–100)	Signed in	Filters status absent. Check the business meaning before labelling it missing punches
+GET /api/v1/attendance/overtime	Query page? (integer, default 1, ≥1), limit? (integer, default 20, 1–100)	Signed in	Unfiltered records in this snapshot. Check backend before enabling this view
+GET /api/v1/attendance/export	Query from_date? (date), to_date? (date)	Core admin/manager	Authenticated file download
+POST /api/v1/attendance/check-in	JSON Core check-in	Signed in	Legacy policy-dependent check-in. Use face/check-in for the biometric flow
+POST /api/v1/attendance/check-out	JSON Core check-out	Signed in	Legacy checkout. Use face/check-out for the biometric flow
+PUT /api/v1/attendance/{attendance_id}	Path attendance_id (UUID) · JSON Manual edit	Core admin/manager	Correction receipt with id, updated, notes
+PATCH /api/v1/attendance/{attendance_id}	Path attendance_id (UUID) · JSON Manual edit	Core admin/manager	Correction receipt with id, updated, notes
+DELETE /api/v1/attendance/{attendance_id}	Path attendance_id (UUID)	Core admin/manager	Deletion receipt
+GET /api/v1/attendance/regularization	Query page? (integer, default 1, ≥1), limit? (integer, default 20, 1–100)	Signed in	Company-wide list. Keep off employee self-service
+POST /api/v1/attendance/regularization	JSON Correction	Signed in	Receipt with id, status, message
+
+
+Attendance monitoring
+Method and full path	Request fields	Route check	Result or use
+GET /api/v1/ai/attendance/dashboard	Query department_id? (UUID), start_date? (date), end_date? (date)	Signed in	AttendanceDashboardResponse in data
+GET /api/v1/ai/attendance/trend	Query group_by? (string, default daily), department_id? (UUID), start_date? (date), end_date? (date)	Signed in	AttendanceTrendResponse in data
+GET /api/v1/ai/attendance/late-arrivals	Query department_id? (UUID), start_date? (date), end_date? (date)	Signed in	LateArrivalsResponse in data
+GET /api/v1/ai/attendance/anomalies	Query department_id? (UUID)	Signed in	Anomaly count and items
+GET /api/v1/ai/attendance/absence-pattern	Query department_id? (UUID)	Signed in	AbsencePatternResponse in data
+GET /api/v1/ai/attendance/overtime	Query department_id? (UUID)	Signed in	OvertimeResponse in data
+GET /api/v1/ai/attendance/shift-violations	Query department_id? (UUID)	Signed in	ShiftViolationsResponse in data
+GET /api/v1/ai/attendance/health-score	Query department_id? (UUID)	Signed in	AttendanceHealthScoreResponse in data
+GET /api/v1/ai/attendance/watchlist	Query department_id? (UUID)	Signed in	WatchlistResponse in data
+GET /api/v1/ai-hub/attendance-monitor	No fields	Signed in	Camel-case monitor KPIs
+POST /api/v1/ai-hub/attendance-monitor/analyze	JSON Monitor analysis	Signed in	Analysis for selected ISO date range
+GET /api/v1/ai-hub/attendance-monitor/anomalies	Query page? (integer, default 1, ≥1), limit? (integer, default 20, 1–100), search? (string), sortBy? (string), sortOrder? (string)	Signed in	Paginated camel-case items. Use the documented query aliases
+
+
+Related routes used by specific screens
+Map these to existing features where relevant. Keep payroll operations in the payroll workflow. Confirm backend support for any flagged report before exposing it.
+Method and full path	Request fields	Route check	Result or use
+GET /api/v1/settings/attendance	No fields	Signed in	Returns general company settings
+PUT /api/v1/settings/attendance	JSON Settings	Core admin	Echoes submitted config. Confirm supported keys by re-reading
+GET /api/v1/reports/attendance	Query month? (integer), year? (integer)	Core admin/manager	Static monthly figures in snapshot. Exclude from live UI
+GET /api/v1/reports/export	Query report_type? (string, default attendance), format? (string, default csv)	Core admin/manager	Returns job metadata. Snapshot service does not enqueue a job
+GET /api/v1/analytics/attendance	Query periodType? (string, default monthly)	Core admin/manager	Company metric. Handler accepts periodType but does not forward it
+GET /api/v1/exports/attendance	Query format? (string, default xlsx), search? (string), date_from? (string)	Export role	Authenticated file download
+GET /api/v1/exports/face-attendance	Query format? (string, default xlsx), search? (string), date_from? (string), branch? (string), department? (string)	Export role	Authenticated file download
+GET /api/v1/ai-insights/attendance	Query refresh? (boolean, default false)	Analytics access	Attendance insight list
+POST /api/v2/pwa/attendance/check-in	Header Idempotency-Key (string, 8–128 chars) · JSON Mobile punch	Signed in + tenant	Mobile attendance_id and idempotent_replay
+POST /api/v2/pwa/attendance/check-out	Header Idempotency-Key (string, 8–128 chars) · JSON Mobile punch	Signed in + tenant	Mobile attendance_id and idempotent_replay
+POST /api/v2/shifts/plans	JSON AI shift plan	Admin/manager	201 with plan_id, entries_count and ai_notes
+POST /api/v2/payroll/cycles/{cycleId}/lock-attendance	Path cycleId (UUID)	Payroll lock permission	Payroll-only lock operation
+POST /api/v2/payroll/cycles/{cycleId}/attendance-lock	Path cycleId (UUID)	Payroll lock permission	Payroll-only lock operation
+POST /api/v2/payroll/cycles/{cycleId}/unlock-attendance	Path cycleId (UUID) · JSON Unlock	Payroll unlock permission	Payroll-only unlock operation
+POST /api/v2/payroll/cycles/{cycleId}/attendance-unlock	Path cycleId (UUID) · JSON Unlock	Payroll unlock permission	Payroll-only unlock operation
+POST /api/v2/payroll/payroll/cycles/{cycleId}/lock-attendance	Path cycleId (UUID)	Payroll lock permission	Duplicate payroll mount. Use the single-prefix operation
+POST /api/v2/payroll/payroll/cycles/{cycleId}/attendance-lock	Path cycleId (UUID)	Payroll lock permission	Duplicate payroll mount. Use the single-prefix operation
+POST /api/v2/payroll/payroll/cycles/{cycleId}/unlock-attendance	Path cycleId (UUID) · JSON Unlock	Payroll unlock permission	Duplicate payroll mount. Use the single-prefix operation
+POST /api/v2/payroll/payroll/cycles/{cycleId}/attendance-unlock	Path cycleId (UUID) · JSON Unlock	Payroll unlock permission	Duplicate payroll mount. Use the single-prefix operation
+
+
+Backend details that affect the UI
+- In the inspected router order, the core handlers serve GET /api/v1/attendance/analytics/rate, /analytics/trends and /analytics/weekly under that same attendance base. Use from_date / to_date for rate and trends, and weeks for weekly. The later face router registers these same paths with different filters. The distinct /analytics/distribution accepts start_date, end_date and view_mode. Confirm effective routing on the branch in use. For the calendar, pass the actual selected month and year since the snapshot has fixed defaults.
+- /face/me returns booleans such as checked_in, checked_out, is_on_break and nested employee, shift, breaks, current_break and today_attendance. Use fields that actually serialize. The V1 face punch returns data.id. The V2 mobile punch uses data.attendance_id and data.idempotent_replay. Reread today after checkout, including when a break was active, since the server can close the break. The /face/history, /face/team and /face/company lists return data.items, total, page and limit.
+- The core /team handler lists company records for today. For direct-report workflows use /face/team. The core /regularization GET lists by company. The employee may submit a correction via POST. Verify a self-scoped read before implementing “My requests.” The attendance router has no dedicated approve/reject regularization operation in this snapshot. The shift options route has an admin/manager gate, even though employees can submit a shift-change request. If the employee screen needs a selectable list, find an employee-authorized source on the current branch or identify that specific backend dependency.
+- Snapshot V1 check-in accepts work_mode in its parser but resets it before geofence evaluation. GPS can be rejected even when a UI expects a remote exception. Show the server outcome. Keep disabled or unsupported controls explicit and report mismatches with handler evidence. For employee history or organization-wide metrics, require the correct backend data scope. Client filters cannot enforce authorization.
+- Verify data provenance. The snapshot’s monthly /reports/attendance service returns fixed figures and /reports/export builds job metadata without queuing the job in that method. For downloads use the supported authenticated CSV or export route that returns the actual file. Keep the report unavailable if its figures cannot be obtained from an equivalent real source. The snapshot registers the same payroll cycle handlers through two mounts. For an existing payroll workflow prefer the single /api/v2/payroll/cycles/ prefix. The doubled /api/v2/payroll/payroll/cycles/ variants are redundant compatibility paths. Call one canonical route per action. These operations belong only to existing authorized payroll controls.
+- Keep the attendance feature independent from legacy school routes and unrelated platform dashboards. If multiple endpoints feed the same screen, select the one whose data scope, filters and response match that screen. Implement a typed method for each supported attendance operation, and trigger a request only for a real user flow. Record a server dependency for each blocked operation.
+Acceptance checks and final handoff
+1. Use the frontend project’s package manager. Run its typecheck, lint, relevant tests and build. Add focused tests for URL building, required and optional fields, V1 nested versus V2 flat location, per-action idempotency, response mapping, auth/cache reset and mutation invalidation. Test fixtures belong in tests.
+2. With local or staging test accounts, verify an employee can exercise first enrollment → check-in → start break → end break → checkout. Verify name, button states, timestamps, elapsed breaks and history after a refresh or app restart. Cover camera/GPS denial, no enrollment, low-quality image or mismatch, duplicate taps, a lost response and overnight attendance. Reconcile against the server on return from background. Keep raw biometric data out of evidence.
+3. With the appropriate test roles, verify direct reports, company views, filters, corrections, schedules, shifts, roster create/bulk/edit, downloads and the existing monitor screens. Check that changing user or tenant clears old data, that employees stay in self-service and that a rejected or locked edit preserves the last saved record. Exercise deletions and payroll lock actions only on disposable test data when those workflows are part of the app.
+4. Return a compact screen-to-endpoint map, the changed files, commands and outcomes, and any blocker with its route and field. Show which checks ran against a real backend, which used fixtures, and which need credentials or a device. Mark a workflow verified only after its normal UI action and server result have been observed.

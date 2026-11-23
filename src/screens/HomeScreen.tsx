@@ -416,22 +416,18 @@ export function HomeScreen({
         </div>
       ) : null}
 
-      {activeHomeTab === 'shifts' && data ? (
+      {activeHomeTab === 'shifts' ? (
         <ShiftsAndRostersScreen
           mode="shifts"
-          shifts={data.shifts}
-          rosters={data.rosters}
           isDark={isDark}
           canManage={canManage}
           onSuccessToast={onSuccessToast}
         />
       ) : null}
 
-      {activeHomeTab === 'rosters' && data ? (
+      {activeHomeTab === 'rosters' ? (
         <ShiftsAndRostersScreen
           mode="rosters"
-          shifts={data.shifts}
-          rosters={data.rosters}
           isDark={isDark}
           canManage={canManage}
           onSuccessToast={onSuccessToast}

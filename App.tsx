@@ -24,11 +24,19 @@ export default function App({ initialRole = 'hr_admin' }: MobileAppProps) {
   }, [initialRole, store]);
 
   if (initialRole === 'employee') {
-    return <EmployeePortalRoot />;
+    return (
+      <Provider store={store}>
+        <EmployeePortalRoot />
+      </Provider>
+    );
   }
 
   if (initialRole === 'it_admin') {
-    return <ItAdminPortalRoot />;
+    return (
+      <Provider store={store}>
+        <ItAdminPortalRoot />
+      </Provider>
+    );
   }
 
   return (
